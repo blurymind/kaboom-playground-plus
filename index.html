@@ -240,7 +240,8 @@
     let tileSize = 32;
     let mapWidth = 10;
     let mapHeight = 10;
-    let tileMapData //= ioJsonData;
+    let tileMapData = store['tileMapEditorData'].value['tileMapData'];
+    let tileMapEditorState = store['tileMapEditorData'].value['appState'];
     const initTilemapEditor = () => {
       console.log("INIT with", {tileSetImages, tileSize})
       // TODO move this under after parsing url params and get everything from there
@@ -257,6 +258,7 @@
         mapHeight,
         // tileset images [{src (required), description (optional)}]
         tileSetImages,
+        appState: tileMapEditorState,
         // You can write your own custom load image function here and use it for the tileset src. If you dont, the base64 string will be used instead
         tileSetLoaders: {
           fromUrl: {
@@ -326,8 +328,16 @@
           },
           buttonText: "Copy Kb to clip", // controls the apply button's text
         },
+        onUpdate(data) {
+          console.log("-->>", data);
+          //storeSetValue('tileMapEditorData', data);
+        }
       })
+      console.log("Got App State:",TilemapEditor.getState())
     }
+    window.onbeforeunload = function(event) {
+      storeSetValue('tileMapEditorData', TilemapEditor.getState());
+    };
 
     if(window.location.href.includes("?")) {
       const urlParams = new URLSearchParams(window.location.href.split("?")[1]);
