@@ -39,7 +39,12 @@
       <input type="radio" id="tab2" name="tab-group">
       <label for="tab2">Code</label>
       <div class="head-tab-content">
-        <div id="editor">err</div>
+        <div class="editor-tab">
+
+          <div class="editor-wrapper"><div id="editor">err</div></div>
+          <div class="kaboom-wrapper"> err </div>
+        </div>
+
       </div>
     </div>
     <div class="head-tab">
@@ -62,8 +67,8 @@
   <script type="module">
     import importTiledJson from './importers/tiled.js';
     import { setEditorAutoCompleter } from './utils/aceTools.js';
-    import {store, storeSetValue, saveStateOnElementWhenEvent, loadFromStoreOnStart,
-      getMapFromGist, getImgurGallery, uploadImageToImgur, initTileMapUrl, initPwaLogic, initTilemapEditor
+    import {store, storeSetValue, saveStateOnElementWhenEvent, loadFromStoreOnStart, initTileMapUrl, initPwaLogic,
+      initTilemapEditor
     } from './utils/helpers.js';
     importTiledJson();
 

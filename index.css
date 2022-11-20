@@ -15,6 +15,20 @@ body {
     background: #202236;
     font-family: Arial, Helvetica, sans-serif;
 }
+
+::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background-color: rgba(155, 155, 155, 0.5);
+    border-radius: 20px;
+    border: transparent;
+}
+
 #snackbar {
     visibility: hidden;
     min-width: 250px;
@@ -108,10 +122,44 @@ body {
 
 
 /*ACE editor*/
+.editor-tab {
+    display: flex;
+    flex: 1;
+    /*gap: 12px;*/
+    height: 100%;
+}
+
 #editor {
     position: absolute;
     top: 0;
-    right: 0;
-    bottom: 0;
+    right: 50%;
+    bottom: 5px;
     left: 0;
+    border-radius: 5px;
+}
+
+.kaboom-wrapper,
+.editor-wrapper{
+    flex:1;
+    border-radius: 5px;
+}
+
+.kaboom-wrapper {
+    background: #1d5d5c;
+    bottom: 5px;
+}
+
+#editor,
+.kaboom-wrapper {
+    margin: 0 10px;
+}
+
+@media only screen and (max-width: 600px) {
+    .editor-tab {
+        flex-direction: column;
+    }
+    #editor {
+        right: 0;
+        bottom: 50%;
+    }
 }
