@@ -175,7 +175,7 @@
                 [
                         {file:"kaboom/sprites/bean.png", name: "bean"},
                         {file:"kaboom/sprites/ghosty.png", name: "ghosty"},
-                ]//todo
+                ]//todo add to json editor - with file and name schema - ability to load files from url and base64
         );
       };
       reRun()
@@ -186,7 +186,7 @@
     initKaboom()
     initTilemapEditor();
     // console.log("Got App State:",TilemapEditor.getState())
-    window.addEventListener('beforeunload', function(event) {
+    document.addEventListener('beforeunload', function(event) {
       storeSetValue('editorValue', editor.getValue())
       storeSetValue('tileMapEditorData', TilemapEditor.getState());
     });
