@@ -77,8 +77,12 @@
     loadFromStoreOnStart()
   </script>
   <script type="module" src="importers/tiled.js"></script>
+<!--  <script type="application/json" id="typeData" src="utils/typeData.json"></script>-->
+  <script type="module" src="utils/typeData.js"></script>
+  <script type="module" src="utils/aceTools.js"></script>
   <script type="module">
     import importTiledJson from './importers/tiled.js';
+    import { setEditorAutoCompleter } from './utils/aceTools.js';
 
     importTiledJson();
 
@@ -96,6 +100,7 @@
     editor.getSession().on('change', ev => {
       storeSetValue('editorValue', editor.getValue())
     });
+    setEditorAutoCompleter(editor);
 
     // Example data structure that tiledmap-editor can read and write
     //https://imgur.com/a/SjjsjTm
