@@ -40,9 +40,10 @@
       <label for="tab2">Code</label>
       <div class="head-tab-content">
         <div class="editor-tab">
-
           <div class="editor-wrapper"><div id="editor">err</div></div>
-          <div class="kaboom-wrapper"> err </div>
+          <div class="kaboom-wrapper">
+            <div id="kbEditor" class="kb-behind-mode"> </div>
+          </div>
         </div>
 
       </div>
@@ -54,6 +55,7 @@
         <p>text 3</p>
       </div>
     </div>
+    <div id="reloadKb">💥</div>
 
   </div>
 
@@ -65,10 +67,11 @@
   <script type="module" src="utils/helpers.js"></script>
 
   <script type="module">
+    // import {kaboom} from "./kaboom/kaboom.js"
     import importTiledJson from './importers/tiled.js';
     import { setEditorAutoCompleter } from './utils/aceTools.js';
     import {store, storeSetValue, saveStateOnElementWhenEvent, loadFromStoreOnStart, initTileMapUrl, initPwaLogic,
-      initTilemapEditor
+      initTilemapEditor, genPreview
     } from './utils/helpers.js';
     importTiledJson();
 
@@ -153,6 +156,34 @@
       // return the transformed data in the end
       return kaboomBoiler
     };
+
+    export const initKaboom = () => {
+      const kaboomIframe = document.createElement('iframe');
+      kaboomIframe.id = 'kaboomIframe';
+      const iframeWrapper = document.createElement('div');
+      iframeWrapper.id = 'kaboomCanvas';
+      iframeWrapper.appendChild(kaboomIframe);
+      document.getElementById('kbEditor').appendChild(iframeWrapper);
+      kaboomIframe.onload = () => {
+        editor.focus();
+      };
+
+
+      const reRun = () => {
+        kaboomIframe.srcdoc = genPreview(
+                editor.getValue(),
+                [
+                        {file:"kaboom/sprites/bean.png", name: "bean"},
+                        {file:"kaboom/sprites/ghosty.png", name: "ghosty"},
+                ]//todo
+        );
+      };
+      reRun()
+      document.getElementById('reloadKb').addEventListener('click', ()=>{
+        reRun()
+      })
+    }
+    initKaboom()
     initTilemapEditor();
     // console.log("Got App State:",TilemapEditor.getState())
     window.addEventListener('beforeunload', function(event) {
