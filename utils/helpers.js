@@ -9,6 +9,11 @@ export const saveStateOnElementWhenEvent = (id, event, key, value, setTo = 'valu
         console.log(store)
     })
 }
+export const triggerOnElementWhenEvent = (id, event, cb) => {
+    document.getElementById(id).addEventListener(event, e=>{
+        cb(id);
+    })
+}
 export const loadFromStoreOnStart = () => {
     Object.entries(store).forEach(([storedKey, storedValue])=>{
         console.log("LOAD -- ", storedKey, storedValue)
@@ -81,6 +86,60 @@ export const uploadImageToImgur = (blob) => {
     }).then(response=>response.json())
 };
 
+export const kaboomJsExport = ({flattenedData, maps, tileSets, activeMap, downloadAsTextFile}) =>{
+    const getTileData = (tileSet, tileSetIdx) => Array.from({length: tileSet.tileCount}, (x, i) => i).map(tile=>{
+        const x = tile % tileSet.gridWidth;
+        const y = Math.floor(tile / tileSet.gridWidth);
+        const tileKey = `${x}-${y}`;
+
+        const tags = Object.keys(tileSet.tags).filter(tagKey => !!tileSet.tags[tagKey]?.tiles[tileKey]);
+        return `"${tileSet.tileData[tileKey]?.tileSymbol}": [
+          sprite("tileset-${tileSetIdx}", { frame: ${tile}, }),
+          ${tags?.join(",")|| ""}
+        ],`
+    }).join("\n")
+
+    const getAsciiMap = (flattenedDataLayer) => `\n${flattenedDataLayer.map((row,rowIndex) => "'" + row.map(tile => tile.tileSymbol).join("")).join("',\n") + "'"}`;
+
+    console.log("TILESETS", {tileSets, flattenedData})
+    const kaboomBoiler = `
+      // Load assets
+      ${Object.values(tileSets).map((tileSet, tileSetIdx) => `
+            loadSprite("tileset-${tileSetIdx}", "${tileSet.src}", {
+            sliceX: ${tileSet.gridWidth},
+            sliceY: ${tileSet.gridHeight},
+        });
+      `).join("\n")}
+
+      // tileset
+      const TILESETS = {};
+        ${Object.values(tileSets).map((tileSet, tileSetIdx) => `
+            const tileset_${tileSetIdx}_data = {
+            width: ${tileSet.tileSize},
+            height: ${tileSet.tileSize},
+            pos: vec2(0, 0),
+             ${getTileData(tileSet, tileSetIdx)}
+             };
+        `).join("\n")}
+        
+      // maps
+      const LEVELS = {};
+      ${flattenedData.map((map, index)=>`
+        LEVELS[${map.map}] = [${getAsciiMap(map.flattenedData[map.flattenedData.length - 1])}];
+      `).join("\n")}
+      
+      
+      scene("game", ({ mapKey }) => {
+        const level = addLevel(LEVELS[mapKey], tileset_0_data); //tileset data should come from map too
+      })
+
+      start("main");
+      `;
+    console.log(kaboomBoiler)
+    // return the transformed data in the end
+    return kaboomBoiler
+};
+
 let tileSetImages = [
     {
         src:"https://i.imgur.com/ztwPZOI.png",
@@ -138,14 +197,15 @@ export const initTilemapEditor = () => {
         },
         // You can write your own tilemap exporters here. Whatever they return will get added to the export data you get out when you trigger onAppy
         tileMapExporters: {
-            // kaboomJs: { // the exporter's key is later used by the onApply option
-            //   name: "Download KaboomJs boilerplate code", // name of menu entry
-            //   description: "Exports boilerplate js code for KaboomJs",
-            //   transformer: ({flattenedData, maps, tileSets, activeMap, downloadAsTextFile})=> {
-            //     const text = kaboomJsExport({flattenedData, maps, tileSets, activeMap});
-            //     downloadAsTextFile(text, "KaboomJsMapData.js");// you can use this util method to get your text as a file
-            //   }
-            // },
+            kaboomJs: { // the exporter's key is later used by the onApply option
+              name: "Download KaboomJs boilerplate code", // name of menu entry
+              description: "Exports boilerplate js code for KaboomJs",
+              transformer: ({flattenedData, maps, tileSets, activeMap, downloadAsTextFile})=> {
+                const text = kaboomJsExport({flattenedData, maps, tileSets, activeMap});
+                console.log("Kaboom Exporter", text)
+                // downloadAsTextFile(text, "KaboomJsMapData.js");// you can use this util method to get your text as a file
+              }
+            },
         },
         tileMapImporters: {
             //similar to the exporters, you can write your own data importer, which will then be added to the file menu
@@ -388,8 +448,17 @@ export const genPreview = (code, resources = []) => {
 <body>
 	<script src="kaboom/kaboom.js"></script>
 	<script>
+
     ${code}
     ${generateResources(resources)}
+    
+    // Editor util functions
+    function pauseGame(){
+        if(!debug.paused) debug.paused = true;
+	}
+    function unPauseGame(){
+        if(debug.paused) debug.paused = false;
+	}
 	</script>
 	<canvas id="kaboomCanvas"></canvas>
 </body>
@@ -397,3 +466,4 @@ export const genPreview = (code, resources = []) => {
 </html>
 	`;
 };
+

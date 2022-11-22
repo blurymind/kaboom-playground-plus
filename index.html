@@ -71,7 +71,7 @@
     import importTiledJson from './importers/tiled.js';
     import { setEditorAutoCompleter } from './utils/aceTools.js';
     import {store, storeSetValue, saveStateOnElementWhenEvent, loadFromStoreOnStart, initTileMapUrl, initPwaLogic,
-      initTilemapEditor, genPreview
+      initTilemapEditor, genPreview, kaboomJsExport, triggerOnElementWhenEvent
     } from './utils/helpers.js';
     importTiledJson();
 
@@ -82,7 +82,7 @@
 
     ace.require("ace/ext/language_tools");
     const editor = ace.edit("editor", {
-      theme: 'ace/theme/monokai',
+      theme: 'ace/theme/dracula',
       mode: 'ace/mode/javascript',
       value: store['editorValue'].value,
       autoScrollEditorIntoView: true,
@@ -98,77 +98,16 @@
     // Example data structure that tiledmap-editor can read and write
     //https://imgur.com/a/SjjsjTm
     // kaboomJs example exporter
-    const kaboomJsExport = ({flattenedData, maps, tileSets, activeMap, downloadAsTextFile}) =>{
-      const getTileData = (tileSet, tileSetIdx) => Array.from({length: tileSet.tileCount}, (x, i) => i).map(tile=>{
-        const x = tile % tileSet.gridWidth;
-        const y = Math.floor(tile / tileSet.gridWidth);
-        const tileKey = `${x}-${y}`;
-
-        const tags = Object.keys(tileSet.tags).filter(tagKey => !!tileSet.tags[tagKey]?.tiles[tileKey]);
-        return `"${tileSet.tileData[tileKey]?.tileSymbol}": [
-          sprite("tileset-${tileSetIdx}", { frame: ${tile}, }),
-          ${tags?.join(",")|| ""}
-        ],`
-      }).join("\n")
-
-      const getAsciiMap = (flattenedDataLayer) => `\n${flattenedDataLayer.map((row,rowIndex) => "'" + row.map(tile => tile.tileSymbol).join("")).join("',\n") + "'"}`;
-
-      console.log("TILESETS", tileSets, flattenedData)
-      const kaboomBoiler = `
-      kaboom({
-        global: true,
-        fullscreen: true,
-        scale: 1,
-        debug: true,
-        clearColor: [0, 0, 0, 1],
-      });
-
-      // Load assets
-      ${Object.values(tileSets).map((tileSet, tileSetIdx) => `
-            loadSprite("tileset-${tileSetIdx}", "${tileSet.src}", {
-            sliceX: ${tileSet.gridWidth},
-            sliceY: ${tileSet.gridHeight},
-        });
-      `).join("\n")}
 
 
-      scene("main", () => {
-      // tileset
-        ${Object.values(tileSets).map((tileSet, tileSetIdx) => `
-            const tileset_${tileSetIdx}_data = {
-            width: ${tileSet.tileSize},
-            height: ${tileSet.tileSize},
-            pos: vec2(0, 0),
-             ${getTileData(tileSet, tileSetIdx)}
-             };
-        `).join("\n")}
-      // maps
-      ${flattenedData.map((map, index)=>`
-        const map_${index} = [${getAsciiMap(map.flattenedData[map.flattenedData.length - 1])}];
-      `).join("\n")}
-
-      addLevel(map_0, tileset_0_data);
-      })
-
-      start("main");
-      `;
-      console.log(kaboomBoiler)
-      // return the transformed data in the end
-      return kaboomBoiler
-    };
-
-    export const initKaboom = () => {
+    export const initKaboom = (tileMapEditorState) => {
+      console.log("Ini KABOOM", tileMapEditorState,"KB data:", TilemapEditor.exporters.kaboomJs.getData())
       const kaboomIframe = document.createElement('iframe');
       kaboomIframe.id = 'kaboomIframe';
       const iframeWrapper = document.createElement('div');
       iframeWrapper.id = 'kaboomCanvas';
       iframeWrapper.appendChild(kaboomIframe);
       document.getElementById('kbEditor').appendChild(iframeWrapper);
-      kaboomIframe.onload = () => {
-        editor.focus();
-      };
-
-
       const reRun = () => {
         kaboomIframe.srcdoc = genPreview(
                 editor.getValue(),
@@ -177,14 +116,20 @@
                         {file:"kaboom/sprites/ghosty.png", name: "ghosty"},
                 ]//todo add to json editor - with file and name schema - ability to load files from url and base64
         );
+        setTimeout(()=>{
+          kaboomIframe.contentWindow.focus();
+        }, 200)
       };
       reRun()
       document.getElementById('reloadKb').addEventListener('click', ()=>{
         reRun()
       })
+      editor.on('focus',()=> kaboomIframe.contentWindow.pauseGame());
+      editor.on('blur',()=> kaboomIframe.contentWindow.unPauseGame());
+      kaboomIframe.addEventListener('click', ()=> kaboomIframe.contentWindow.unPauseGame());
     }
-    initKaboom()
     initTilemapEditor();
+    initKaboom(TilemapEditor.getState())
     // console.log("Got App State:",TilemapEditor.getState())
     document.addEventListener('beforeunload', function(event) {
       storeSetValue('editorValue', editor.getValue())
