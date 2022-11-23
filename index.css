@@ -156,7 +156,9 @@ body {
 
 #kaboomIframe{
     width: 50vw;
-    height: 100vh;
+    height: 90vh;
+    left: 50vw;
+    top: 15px;
 }
 
 @media only screen and (max-width: 600px) {
@@ -165,7 +167,7 @@ body {
     }
     #editor {
         right: 0;
-        bottom: 50%;
+        bottom: 52%;
     }
     #kaboomIframe{
         width: 100vw;

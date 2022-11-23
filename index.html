@@ -124,12 +124,37 @@
       document.getElementById('reloadKb').addEventListener('click', ()=>{
         reRun()
       })
-      editor.on('focus',()=> kaboomIframe.contentWindow.pauseGame());
-      editor.on('blur',()=> kaboomIframe.contentWindow.unPauseGame());
-      kaboomIframe.addEventListener('click', ()=> kaboomIframe.contentWindow.unPauseGame());
+
+      kaboomIframe.addEventListener('load', ()=> {
+        const pauseGame = ()=> kaboomIframe.contentWindow?.pauseGame()
+        const unPauseGame = ()=> kaboomIframe.contentWindow?.unPauseGame()
+        editor.on('focus',pauseGame);
+        editor.on('blur',unPauseGame);
+        kaboomIframe.addEventListener('click', unPauseGame);
+        setTimeout(()=>editor.focus(),200);
+      })
+
     }
+    // destroy kaboom when not on tab
+    function onTabChange(tab){
+      const tileMapEditorData = store['tileMapEditorData'].value
+      storeSetValue('tileMapEditorData', TilemapEditor.getState());
+      storeSetValue('editorValue', editor.getValue())
+      console.log("TAB::", tab)
+      if(tab !== 'tab2') {
+        console.log("destroy tab")
+        document.getElementById('kbEditor').innerHTML = "";
+      } else { //on kaboom
+        // get it from stored state instead
+        initKaboom(tileMapEditorData)
+      }
+    }
+    triggerOnElementWhenEvent('tab1','change',onTabChange)
+    triggerOnElementWhenEvent('tab2','change',onTabChange)
+    triggerOnElementWhenEvent('tab3','change',onTabChange)
+
     initTilemapEditor();
-    initKaboom(TilemapEditor.getState())
+    if (store['activeTab'].value === 2) initKaboom(store['tileMapEditorData'].value)
     // console.log("Got App State:",TilemapEditor.getState())
     document.addEventListener('beforeunload', function(event) {
       storeSetValue('editorValue', editor.getValue())

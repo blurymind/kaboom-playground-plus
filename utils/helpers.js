@@ -3,9 +3,14 @@ export const store = JSON.parse(localStorage.getItem('kaboom-playground')) || {e
 export const storeSetValue = (key, value) => {
     localStorage.setItem('kaboom-playground', JSON.stringify({...store, [key]: {value}}));
 }
+
+export const setStorage = (id, key, value, setTo = 'value') =>{
+    localStorage.setItem('kaboom-playground', JSON.stringify({...store, [key]: {id, key, value, setTo}}));
+}
 export const saveStateOnElementWhenEvent = (id, event, key, value, setTo = 'value') => {
     document.getElementById(id).addEventListener(event, e=>{
-        localStorage.setItem('kaboom-playground', JSON.stringify({...store, [key]: {id, event, key, value, setTo}}));
+        setStorage(id, key, value, setTo)
+        // localStorage.setItem('kaboom-playground', JSON.stringify({...store, [key]: {id, event, key, value, setTo}}));
         console.log(store)
     })
 }
@@ -16,7 +21,7 @@ export const triggerOnElementWhenEvent = (id, event, cb) => {
 }
 export const loadFromStoreOnStart = () => {
     Object.entries(store).forEach(([storedKey, storedValue])=>{
-        console.log("LOAD -- ", storedKey, storedValue)
+        //console.log("LOAD -- ", storedKey, storedValue)
         const {id, event, key, value, setTo} = storedValue;
         if(id && setTo) document.getElementById(id)[setTo] = value;
     })
@@ -129,8 +134,8 @@ export const kaboomJsExport = ({flattenedData, maps, tileSets, activeMap, downlo
       `).join("\n")}
       
       
-      scene("game", ({ mapKey }) => {
-        const level = addLevel(LEVELS[mapKey], tileset_0_data); //tileset data should come from map too
+      scene("game", ({ mapKey }) => { // get tileset index
+        const level = addLevel(LEVELS[mapKey], tileset_0_data); //todo tileset data should come from map too
       })
 
       start("main");
@@ -459,6 +464,7 @@ export const genPreview = (code, resources = []) => {
     function unPauseGame(){
         if(debug.paused) debug.paused = false;
 	}
+    // pauseGame()
 	</script>
 	<canvas id="kaboomCanvas"></canvas>
 </body>
