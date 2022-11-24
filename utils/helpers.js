@@ -1,17 +1,25 @@
+import {aceEditorSeed, tilemapEditorSeed} from './seed.js'
 // Persist GUI state
 export const store = JSON.parse(localStorage.getItem('kaboom-playground')) || {editorValue: 'console.log("Hi :)");'};
 export const storeSetValue = (key, value) => {
     localStorage.setItem('kaboom-playground', JSON.stringify({...store, [key]: {value}}));
 }
 
-export const setStorage = (id, key, value, setTo = 'value') =>{
-    localStorage.setItem('kaboom-playground', JSON.stringify({...store, [key]: {id, key, value, setTo}}));
+export const getValueFromStore = (storeId, failValue = "",valueKey = "") =>{
+    console.log("get store val", store)
+    if(!valueKey) return store[storeId]?.value || failValue;
+    return store[storeId]?.value[valueKey] || failValue;
 }
-export const saveStateOnElementWhenEvent = (id, event, key, value, setTo = 'value') => {
+
+export const setStorage = (id, key, value) =>{
+    localStorage.setItem('kaboom-playground', JSON.stringify({...store, [key]: {id, key, value}}));
+}
+export const saveStateOnElementWhenEvent = (id, event, key, value, setTo) => {
     document.getElementById(id).addEventListener(event, e=>{
-        setStorage(id, key, value, setTo)
-        // localStorage.setItem('kaboom-playground', JSON.stringify({...store, [key]: {id, event, key, value, setTo}}));
-        console.log(store)
+        // setStorage(id, key, value, setTo)
+        console.log()
+        localStorage.setItem('kaboom-playground', JSON.stringify({...store, [key]: {id, event, key, value, setTo}}));
+        console.log("saveStateOnElementWhenEvent",store)
     })
 }
 export const triggerOnElementWhenEvent = (id, event, cb) => {
@@ -20,10 +28,11 @@ export const triggerOnElementWhenEvent = (id, event, cb) => {
     })
 }
 export const loadFromStoreOnStart = () => {
+    console.log("loadFromStoreOnStart", store)
     Object.entries(store).forEach(([storedKey, storedValue])=>{
         //console.log("LOAD -- ", storedKey, storedValue)
         const {id, event, key, value, setTo} = storedValue;
-        if(id && setTo) document.getElementById(id)[setTo] = value;
+        if(id && setTo && document.getElementById(id)) document.getElementById(id)[setTo] = value;
     })
 }
 
@@ -158,12 +167,34 @@ let tileSetImages = [
         src: "https://blurymind.github.io/tilemap-editor/free.png"
     }
 ];
+
+
+// function throttle(fn, wait) {
+//     var time = Date.now();
+//     return function() {
+//         if ((time + wait - Date.now()) < 0) {
+//             fn();
+//             time = Date.now();
+//         }
+//     }
+// }
+// function saveAppStateThrottled(){
+//     storeSetValue('tileMapEditorData', TilemapEditor.getState());
+//     // if(editor)storeSetValue('editorValue', editor.getValue())
+// }
+// export function saveAppState(){
+//     storeSetValue('tileMapEditorData', TilemapEditor.getState());
+//     storeSetValue('editorValue', editor.getValue())
+// }
+
 let tileSize = 32;
 let mapWidth = 10;
 let mapHeight = 10;
-let tileMapData = store['tileMapEditorData'].value['tileMapData'];
-let tileMapEditorState = store['tileMapEditorData'].value['appState'];
+let tileMapData = getValueFromStore('tileMapEditorData', tilemapEditorSeed, 'tileMapData');
+let tileMapEditorState = getValueFromStore('tileMapEditorData','', 'appState');
+console.log({tileMapData})
 export const initTilemapEditor = () => {
+    if(!tileMapData) return;
     console.log("INIT with", {tileSetImages, tileSize})
     // TODO move this under after parsing url params and get everything from there
     TilemapEditor.init("tileMapEditor",{ // The id of the element that will become the tilemap-editor (must exist in your dom)
@@ -250,10 +281,9 @@ export const initTilemapEditor = () => {
             },
             buttonText: "Copy Kb to clip", // controls the apply button's text
         },
-        // onUpdate(data) {
-        //     console.log("-->>", data);
-        //     //storeSetValue('tileMapEditorData', data);
-        // }
+        onMouseUp(data) {
+            storeSetValue('tileMapEditorData', data);
+        }
     })
 }
 
