@@ -174,3 +174,18 @@ body {
         height: 50vh;
     }
 }
+
+.progressBar {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 200px;
+    height: 16px;
+    background-color: #067A6D;
+}
+.progressBar > div {
+    width: 50%;
+    height: 100%;
+    background-color: #04AA6D;
+    border-radius: 3px;
+}

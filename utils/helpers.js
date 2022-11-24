@@ -1,8 +1,21 @@
 import {aceEditorSeed, tilemapEditorSeed} from './seed.js'
 // Persist GUI state
+const updateStorageIndicator= () => {
+    navigator.storage.estimate().then(function(estimate) {
+        console.log("Total Storage Available: " + estimate.quota);
+        const percentUsed = ((100 * estimate.usage) / estimate.quota).toFixed(0)
+        console.log(`Storage Used: ${estimate.usage} / ${estimate.quota} - ${(100 * estimate.usage) / estimate.quota} %`);
+        document.title = `KB+ ${percentUsed} %`
+        document.getElementById("storageProgressBar").style.width = `${percentUsed}%`;
+        document.getElementById("storageProgressBar").innerHTML = `${percentUsed}%`;
+    });
+}
+
+updateStorageIndicator();
 export const store = JSON.parse(localStorage.getItem('kaboom-playground')) || {editorValue: 'console.log("Hi :)");'};
 export const storeSetValue = (key, value) => {
     localStorage.setItem('kaboom-playground', JSON.stringify({...store, [key]: {value}}));
+    updateStorageIndicator();
 }
 
 export const getValueFromStore = (storeId, failValue = "",valueKey = "") =>{
@@ -13,6 +26,7 @@ export const getValueFromStore = (storeId, failValue = "",valueKey = "") =>{
 
 export const setStorage = (id, key, value) =>{
     localStorage.setItem('kaboom-playground', JSON.stringify({...store, [key]: {id, key, value}}));
+    updateStorageIndicator();
 }
 export const saveStateOnElementWhenEvent = (id, event, key, value, setTo) => {
     document.getElementById(id).addEventListener(event, e=>{
@@ -20,6 +34,7 @@ export const saveStateOnElementWhenEvent = (id, event, key, value, setTo) => {
         console.log()
         localStorage.setItem('kaboom-playground', JSON.stringify({...store, [key]: {id, event, key, value, setTo}}));
         console.log("saveStateOnElementWhenEvent",store)
+        updateStorageIndicator();
     })
 }
 export const triggerOnElementWhenEvent = (id, event, cb) => {
