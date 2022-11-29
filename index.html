@@ -59,7 +59,7 @@
     <div id="reloadKb">💥</div>
 
     <div class="progressBar">
-      <div id="storageProgressBar"> 0% </div>
+      <div id="storageProgressBar"> 1% </div>
     </div>
 
 
@@ -114,8 +114,9 @@
       iframeWrapper.appendChild(kaboomIframe);
       document.getElementById('kbEditor').appendChild(iframeWrapper);
       const reRun = () => {
-        const tileMapData = getValueFromStore('tileMapEditorData', tilemapEditorSeed)
-        console.log({editor: editor.getValue(), tileMapData})
+        const kbExportData = TilemapEditor.exporters.kaboomJs.getData()
+        const tileMapData = getValueFromStore('tileMapEditorData', tilemapEditorSeed, tileMapEditorState)
+        console.log({editor: editor.getValue(), tileMapData, TilemapEditor, kbExportData})
         kaboomIframe.srcdoc = genPreview(
                 editor.getValue(),
                 [

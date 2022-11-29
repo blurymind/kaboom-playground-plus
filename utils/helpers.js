@@ -2,9 +2,8 @@ import {aceEditorSeed, tilemapEditorSeed} from './seed.js'
 // Persist GUI state
 const updateStorageIndicator= () => {
     navigator.storage.estimate().then(function(estimate) {
-        console.log("Total Storage Available: " + estimate.quota);
         const percentUsed = ((100 * estimate.usage) / estimate.quota).toFixed(0)
-        console.log(`Storage Used: ${estimate.usage} / ${estimate.quota} - ${(100 * estimate.usage) / estimate.quota} %`);
+        // console.log(`Storage Used: ${estimate.usage} / ${estimate.quota} - ${(100 * estimate.usage) / estimate.quota} %`);
         document.title = `KB+ ${percentUsed} %`
         document.getElementById("storageProgressBar").style.width = `${percentUsed}%`;
         document.getElementById("storageProgressBar").innerHTML = `${percentUsed}%`;
@@ -116,6 +115,7 @@ export const uploadImageToImgur = (blob) => {
 };
 
 export const kaboomJsExport = ({flattenedData, maps, tileSets, activeMap, downloadAsTextFile}) =>{
+
     const getTileData = (tileSet, tileSetIdx) => Array.from({length: tileSet.tileCount}, (x, i) => i).map(tile=>{
         const x = tile % tileSet.gridWidth;
         const y = Math.floor(tile / tileSet.gridWidth);
@@ -130,39 +130,76 @@ export const kaboomJsExport = ({flattenedData, maps, tileSets, activeMap, downlo
 
     const getAsciiMap = (flattenedDataLayer) => `\n${flattenedDataLayer.map((row,rowIndex) => "'" + row.map(tile => tile.tileSymbol).join("")).join("',\n") + "'"}`;
 
-    console.log("TILESETS", {tileSets, flattenedData})
-    const kaboomBoiler = `
-      // Load assets
-      ${Object.values(tileSets).map((tileSet, tileSetIdx) => `
+    const generateMap = flattenedData.map((map, index)=>`
+        LEVELS[${map.map}] = [${getAsciiMap(map.flattenedData[map.flattenedData.length - 1])}];
+      `).join("\n")
+    //old
+    const generateLoadSprites = Object.values(tileSets).map((tileSet, tileSetIdx) => `
             loadSprite("tileset-${tileSetIdx}", "${tileSet.src}", {
             sliceX: ${tileSet.gridWidth},
             sliceY: ${tileSet.gridHeight},
         });
-      `).join("\n")}
-
-      // tileset
-      const TILESETS = {};
-        ${Object.values(tileSets).map((tileSet, tileSetIdx) => `
+      `).join("\n")
+    const generateTileSeltsOld = Object.values(tileSets).map((tileSet, tileSetIdx) => `
             const tileset_${tileSetIdx}_data = {
             width: ${tileSet.tileSize},
             height: ${tileSet.tileSize},
             pos: vec2(0, 0),
              ${getTileData(tileSet, tileSetIdx)}
              };
+        `).join("\n")
+    console.log("TILESETS:: ", {tileSets, flattenedData})
+    const kaboomBoiler = `
+      ///// Kaboom data generated from tilemap editor -- START
+      // Load assets
+        // tilesets new
+        ${Object.values(tileSets).map((tileSet, tileSetIdx) => `
+            loadSpriteAtlas("${tileSet.src}",
+                ${Object.entries(tileSet.frames).map(([key,frame])=>{
+                    return `
+                    "${key}": {
+                      "x": 128,
+                      "y": 196,
+                      "width": 144,
+                      "height": 28,
+                      "sliceX": ${frame.frameCount},
+                      "anims": {
+                        ${Object.entries(frame?.animations ?? {}).map(([animKey,animation])=>{
+                            return `
+                            "${animKey}": {
+                              "from": ${animation.start - 1},
+                              "to": ${animation.end - 1},
+                              "speed": ${animation.speed ?? 1},
+                              "loop": ${animation.loop ?? "true"}
+                            }`}).join(",\n")}
+                            "hit": 8, //Todo custom values
+                      }
+                    }`}).join(",\n")
+                })
         `).join("\n")}
+        //TODO
         
+   
+        // generateLoadSprites
+    
+              // tilesets old
+    
+        // generateTileSeltsOld
+    
       // maps
       const LEVELS = {};
-      ${flattenedData.map((map, index)=>`
-        LEVELS[${map.map}] = [${getAsciiMap(map.flattenedData[map.flattenedData.length - 1])}];
-      `).join("\n")}
       
-      
+      // maps
+  
+        // generateMap
+
+     
       scene("game", ({ mapKey }) => { // get tileset index
         const level = addLevel(LEVELS[mapKey], tileset_0_data); //todo tileset data should come from map too
       })
 
-      start("main");
+      ///// Kaboom data generated from tilemap editor -- END
+
       `;
     console.log(kaboomBoiler)
     // return the transformed data in the end
@@ -192,14 +229,6 @@ let tileSetImages = [
 //             time = Date.now();
 //         }
 //     }
-// }
-// function saveAppStateThrottled(){
-//     storeSetValue('tileMapEditorData', TilemapEditor.getState());
-//     // if(editor)storeSetValue('editorValue', editor.getValue())
-// }
-// export function saveAppState(){
-//     storeSetValue('tileMapEditorData', TilemapEditor.getState());
-//     storeSetValue('editorValue', editor.getValue())
 // }
 
 let tileSize = 32;
@@ -296,7 +325,9 @@ export const initTilemapEditor = () => {
             },
             buttonText: "Copy Kb to clip", // controls the apply button's text
         },
-        onMouseUp(data) {
+        onMouseUp(data, exporters) {
+            // storeSetValue('tileMapEditorData', data);
+            // console.log( exporters.kaboomJs.getData())
             storeSetValue('tileMapEditorData', data);
         }
     })
