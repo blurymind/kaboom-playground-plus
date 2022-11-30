@@ -94,6 +94,7 @@
       enableBasicAutocompletion: true,
       enableLiveAutocompletion: true,
       behavioursEnabled: true,
+      useWrapMode: true,
     });
     editor.getSession().on('change', ev => {
       storeSetValue('editorValue', editor.getValue())

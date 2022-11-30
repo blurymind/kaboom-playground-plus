@@ -152,16 +152,17 @@ export const kaboomJsExport = ({flattenedData, maps, tileSets, activeMap, downlo
     const kaboomBoiler = `
       ///// Kaboom data generated from tilemap editor -- START
       // Load assets
-        // tilesets new
+        // Slice atlas
         ${Object.values(tileSets).map((tileSet, tileSetIdx) => `
-            loadSpriteAtlas("${tileSet.src}",
+            loadSpriteAtlas("${tileSet.src}", {
+                // animated slices
                 ${Object.entries(tileSet.frames).map(([key,frame])=>{
                     return `
                     "${key}": {
-                      "x": 128,
-                      "y": 196,
-                      "width": 144,
-                      "height": 28,
+                      "x": ${((frame.start.x + 1) * tileSet.tileSize) - tileSet.tileSize},
+                      "y": ${((frame.start.y + 1) * tileSet.tileSize) - tileSet.tileSize},
+                      "width": ${frame.width * tileSet.tileSize * frame.frameCount},
+                      "height": ${frame.height * tileSet.tileSize},
                       "sliceX": ${frame.frameCount},
                       "anims": {
                         ${Object.entries(frame?.animations ?? {}).map(([animKey,animation])=>{
@@ -175,8 +176,19 @@ export const kaboomJsExport = ({flattenedData, maps, tileSets, activeMap, downlo
                             "hit": 8, //Todo custom values
                       }
                     }`}).join(",\n")
-                })
-        `).join("\n")}
+                },
+                // map tiles
+                ${Object.entries(tileSet.tileData).map(([key,tile])=>{
+                    return `
+                    "${tile.tileSymbol}": {
+                      "x": ${((tile.x + 1) * tileSet.tileSize) - tileSet.tileSize},
+                      "y": ${((tile.y + 1) * tileSet.tileSize) - tileSet.tileSize},
+                      "width": ${tileSet.tileSize},
+                      "height": ${tileSet.tileSize},
+                    }`}).join(",\n")
+                }
+            `).join("\n")}
+            })
         //TODO
         
    
