@@ -45,6 +45,7 @@
           <div class="editor-wrapper"><div id="editor">err</div></div>
           <div class="kaboom-wrapper">
             <div id="kbEditor" class="kb-behind-mode"> </div>
+            <div id="joyStick"></div>
           </div>
         </div>
 
@@ -73,11 +74,13 @@
   <script type="module" src="utils/typeData.js"></script>
   <script type="module" src="utils/aceTools.js"></script>
   <script type="module" src="utils/helpers.js"></script>
+  <script type="module" src="utils/joystick.js"></script>
 
   <script type="module">
     // import {kaboom} from "./kaboom/kaboom.js"
     import importTiledJson from './importers/tiled.js';
     import { setEditorAutoCompleter } from './utils/aceTools.js';
+    import { JoyStick } from './utils/joystick.js';
     import {store, storeSetValue, saveStateOnElementWhenEvent, loadFromStoreOnStart, initTileMapUrl, initPwaLogic,
       initTilemapEditor, genPreview, kaboomJsExport, triggerOnElementWhenEvent, getValueFromStore, setStorage
     } from './utils/helpers.js';
@@ -103,6 +106,15 @@
     });
     setEditorAutoCompleter(editor);
 
+    const control = new JoyStick({
+      element: document.getElementById("joyStick"),
+      style: `
+        // width: 200px;
+        // height: 200px;
+        // bottom: 10px;
+        // left: 100px;
+      `,
+    });
 
     document.getElementById("aceSplitScreenToggle").addEventListener("click", function() {
       let isEditorWide = false; //todo toggle
