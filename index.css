@@ -186,6 +186,23 @@ body {
     }
 }
 
+/*@media screen and (orientation:portrait) { … }*/
+@media screen and (orientation:landscape) {
+    #editor {
+        display: none;
+    }
+    #kaboomIframe{
+        left: 0;
+        height: calc(100vh - 40px);
+        width: calc(100vw - 20px);
+    }
+}
+@media (pointer:none), (pointer:coarse) {
+    #aceSplitScreenToggle {
+        display: none;
+    }
+}
+
 .progressBar {
     position: absolute;
     top: 3px;
