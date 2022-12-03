@@ -24,7 +24,7 @@ body {
     background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-    background-color: rgba(155, 155, 155, 0.5);
+    background-color: rgb(255 248 13 / 17%);
     border-radius: 20px;
     border: transparent;
 }
@@ -136,6 +136,7 @@ body {
     bottom: 5px;
     left: 0;
     border-radius: 5px;
+    border: 1px solid cyan;
 }
 
 .kaboom-wrapper,
@@ -145,7 +146,7 @@ body {
 }
 
 .kaboom-wrapper {
-    background: #1d5d5c;
+    /*background: #1d5d5c;*/
     bottom: 5px;
 }
 
@@ -155,12 +156,19 @@ body {
 }
 
 #kaboomIframe{
-    width: 50vw;
+    width: calc(50vw - 3px);
     height: 90vh;
-    left: 50vw;
+    left: calc(50vw + 3px);
     top: 15px;
+    border-radius: 5px;
 }
 
+#aceSplitScreenToggle {
+    position:absolute;
+    z-index: 666;
+    top: 20%;
+    font-size: 29px;
+}
 @media only screen and (max-width: 600px) {
     .editor-tab {
         flex-direction: column;
@@ -170,8 +178,11 @@ body {
         bottom: 52%;
     }
     #kaboomIframe{
-        width: 100vw;
-        height: 50vh;
+        width: calc(100vw - 20px);
+        height: calc(50vh - 2px);
+    }
+    #aceSplitScreenToggle {
+        display: none;
     }
 }
 
@@ -181,11 +192,13 @@ body {
     right: 3px;
     width: 200px;
     height: 16px;
-    background-color: #067A6D;
+    background-color: #067a6d6e;
+    color: #ffffff8f;
 }
 .progressBar > div {
     width: 50%;
     height: 100%;
     background-color: #04AA6D;
     border-radius: 3px;
+    margin: 0 4px;
 }

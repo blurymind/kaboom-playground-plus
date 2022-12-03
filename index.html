@@ -40,6 +40,7 @@
       <input type="radio" id="tab2" name="tab-group">
       <label for="tab2">Code</label>
       <div class="head-tab-content">
+        <div id="aceSplitScreenToggle" style="right:50%">➡️</div>
         <div class="editor-tab">
           <div class="editor-wrapper"><div id="editor">err</div></div>
           <div class="kaboom-wrapper">
@@ -57,6 +58,7 @@
       </div>
     </div>
     <div id="reloadKb">💥</div>
+
 
     <div class="progressBar">
       <div id="storageProgressBar"> 1% </div>
@@ -101,6 +103,15 @@
     });
     setEditorAutoCompleter(editor);
 
+
+    document.getElementById("aceSplitScreenToggle").addEventListener("click", function() {
+      let isEditorWide = false; //todo toggle
+      document.getElementById("aceSplitScreenToggle").style.right = isEditorWide ? "0%" : undefined;
+      document.getElementById("editor").style.right = isEditorWide ? 0 : "50vw";
+      document.getElementById("editor").style.opacity = isEditorWide ? 0.85 : undefined;
+      document.getElementById("kaboomIframe").style.width = isEditorWide ? "90vw" : undefined;
+      isEditorWide = !isEditorWide
+    })
     // Example data structure that tiledmap-editor can read and write
     //https://imgur.com/a/SjjsjTm
     // kaboomJs example exporter
