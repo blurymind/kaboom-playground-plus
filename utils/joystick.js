@@ -1,5 +1,52 @@
+// function fireKey(el)
+// {
+//     var key;
+//     switch(el.id)
+//     {
+//         case "left":
+//             key = 37;
+//             break;
+//         case "right":
+//             key = 39;
+//             break;
+//     }
+//     if(document.createEventObject)
+//     {
+//         var eventObj = document.createEventObject();
+//         eventObj.keyCode = key;
+//         el.fireEvent("onkeydown", eventObj);
+//     }else if(document.createEvent)
+//     {
+//         var eventObj = document.createEvent("Events");
+//         eventObj.initEvent("keydown", true, true);
+//         eventObj.which = key;
+//         el.dispatchEvent(eventObj);
+//     }
+// }
+//
+// function clicked(evt) {
+//     var el;
+//     if(!evt)
+//     {
+//         evt = window.event;
+//         el = evt.srcElement;
+//     }else  if(evt)
+//     {
+//         el = evt.target;
+//     }
+//     switch(el.id)
+//     {
+//         case "left":
+//             fireKey(el);
+//             break;
+//         case "right":
+//             fireKey(el);
+//             break;
+//     }
+// }
+
 export class JoyStick {
-    constructor({element, style, diameter}) {
+    constructor({element, style, sensitivity, onInput, onRelease, onDir}) {
         // create canvas
         this.canvas = document.createElement("canvas")
         this.canvas.id = 'joystick'
@@ -19,6 +66,10 @@ export class JoyStick {
             x: this.canvas.offsetLeft,
             y: this.canvas.offsetTop
         }
+        this.sensitivity = sensitivity ?? 0.8;
+        this.onInput = onInput;
+        this.onRelease = onRelease;
+        this.onDir = onDir;
 
         this.context = this.canvas.getContext('2d')
 
@@ -94,20 +145,48 @@ export class JoyStick {
         return distancesquared <= radius * radius
     }
 
+    fireEvent(x,y){
+        const xNorm = x * 0.01;
+        const yNorm = y * 0.01;
+        const sensitivity = this.sensitivity;
+
+        console.log({x,y,xNorm,yNorm})
+        let direction = undefined;
+        if(xNorm > sensitivity){ // deadzone
+            console.log("MOVING RIGHT")
+            direction = "RIGHT";
+        }
+        if(xNorm < -sensitivity){
+            console.log("MOVING LEFT")
+            direction = "LEFT";
+        }
+        if(yNorm > sensitivity){
+            console.log("MOVING DOWN")
+            direction = "DOWN";
+        }
+        if(yNorm < -sensitivity){
+            console.log("MOVING UP")
+            direction = "UP";
+        }
+        if(direction && this.onDir){
+            this.onDir(direction)
+        }
+        if(this.onInput) {
+            this.onInput({x,y,xNorm,yNorm, direction})
+        }
+    }
     move(event) {
         var angle = this.getAngle(
             {x: this.offset.x, y: this.offset.y},
             {x: event.pageX, y: event.pageY}
-            // {x: event.x, y: event.y}
         )
         var distance = this.getDistance(
             {x: this.offset.x, y: this.offset.y},
             {x: event.pageX, y: event.pageY}
-            // {x: event.x, y: event.y}
         )
-console.log(this.offset, event)
         let coords = this.calculateCoords(angle, distance)
 
+        this.fireEvent(coords.x, coords.y);
         console.log(coords.x * -0.01, coords.y * -0.01)
 
         var x = coords.x + this.radius
@@ -128,6 +207,9 @@ console.log(this.offset, event)
         this.stick.x = this.radius
         this.stick.y = this.radius
         this.stick.update()
+        if(this.onRelease){
+            this.onRelease();
+        }
     }
 
     destroy() {
