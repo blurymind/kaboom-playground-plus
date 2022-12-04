@@ -546,12 +546,7 @@ export const genPreview = (code, resources = []) => {
     import { JoyStick } from './utils/joystick.js';
     
 
-    let onJoyDir = () => {
-      ${code.match(/onKeyDown\(\"(left|right|up|down)\"\,/gm).map(matched=>{
-        // console.log("--", matched)
-        return ""
-      }).join("")}
-    };// can rewrite what this does in ace
+    let onJoyDir = () => {};// can rewrite what this does in ace
     let onJoyInput = () => {};// can rewrite what this does in ace
     let onJoyDown = () => {};// can rewrite what this does in ace
     let onJoyUp = () => {};// can rewrite what this does in ace
