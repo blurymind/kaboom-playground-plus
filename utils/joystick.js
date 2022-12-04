@@ -4,9 +4,10 @@ const DIRECTION = {
 }
 
 export class JoyStick {
-    constructor({element, style, sensitivity, onJoyInput, onJoyUp, onJoyDown, onJoyDir, controlElement}) {
+    constructor({element, style, sensitivity, onJoyInput, onJoyUp, onJoyDown, onJoyDir, controlElement, showOnlyOnMobile}) {
         this.element = element;
         this.controlElement = controlElement;
+        this.showOnlyOnMobile = showOnlyOnMobile;
         // create canvas
         this.canvas = document.createElement("canvas")
         this.canvas.id = 'joystick'
@@ -60,6 +61,9 @@ export class JoyStick {
     }
 
     addStyle() {
+        const show = this.showOnlyOnMobile ? navigator.userAgent.match(/Android/i) ||
+            navigator.userAgent.match(/iPhone/i) : false
+
         const styleSheet = document.createElement('style')
         styleSheet.type = 'text/css'
         styleSheet.innerText = `
@@ -75,8 +79,23 @@ export class JoyStick {
           top: calc(100vh - 140px);
           right: calc(100vw - 300px);
           transform: translate(-50%, -50%);
+          ${show ? "" : "display: none;"}
         ${this.style}
       }
+      ${show && ["landscape", "portrait"].includes(this.showOnlyOnMobile) ?
+            `
+            #joyStick {
+                display: none;
+            }
+            @media only screen and (orientation:${this.showOnlyOnMobile}) {
+                #joyStick {
+                    display: block;
+                }
+            }
+            `
+            :
+            ""
+        }
     `
         document.body.appendChild(styleSheet)
         document.body.style.touchAction = 'none';

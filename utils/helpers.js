@@ -573,17 +573,15 @@ export const genPreview = (code, resources = []) => {
     const control = new JoyStick({
           element: document.getElementById("joyStick"),
           style: \`
-        // width: 200px;
-        // height: 200px;
-        // bottom: 10px;
-        // left: 100px;
+            opacity: 0.7;        
       \`,
           sensitivity: 0.5, // half from distance triggers directions
           controlElement: document,
           onJoyDir,
           onJoyInput,
           onJoyDown,
-          onJoyUp
+          onJoyUp,
+          showOnlyOnMobile: "landscape"
     });
 	</script>
 <!--	<canvas id="kaboomCanvas"></canvas>-->
