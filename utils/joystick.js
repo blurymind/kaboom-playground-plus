@@ -1,52 +1,12 @@
-// function fireKey(el)
-// {
-//     var key;
-//     switch(el.id)
-//     {
-//         case "left":
-//             key = 37;
-//             break;
-//         case "right":
-//             key = 39;
-//             break;
-//     }
-//     if(document.createEventObject)
-//     {
-//         var eventObj = document.createEventObject();
-//         eventObj.keyCode = key;
-//         el.fireEvent("onkeydown", eventObj);
-//     }else if(document.createEvent)
-//     {
-//         var eventObj = document.createEvent("Events");
-//         eventObj.initEvent("keydown", true, true);
-//         eventObj.which = key;
-//         el.dispatchEvent(eventObj);
-//     }
-// }
-//
-// function clicked(evt) {
-//     var el;
-//     if(!evt)
-//     {
-//         evt = window.event;
-//         el = evt.srcElement;
-//     }else  if(evt)
-//     {
-//         el = evt.target;
-//     }
-//     switch(el.id)
-//     {
-//         case "left":
-//             fireKey(el);
-//             break;
-//         case "right":
-//             fireKey(el);
-//             break;
-//     }
-// }
+const DIRECTION = {
+    LEFT: 37,
+    RIGHT: 39,
+}
 
 export class JoyStick {
-    constructor({element, style, sensitivity, onInput, onRelease, onDir}) {
+    constructor({element, style, sensitivity, onJoyInput, onJoyUp, onJoyDown, onJoyDir, controlElement}) {
+        this.element = element;
+        this.controlElement = controlElement;
         // create canvas
         this.canvas = document.createElement("canvas")
         this.canvas.id = 'joystick'
@@ -67,9 +27,10 @@ export class JoyStick {
             y: this.canvas.offsetTop
         }
         this.sensitivity = sensitivity ?? 0.8;
-        this.onInput = onInput;
-        this.onRelease = onRelease;
-        this.onDir = onDir;
+        this.onInput = onJoyInput;
+        this.onRelease = onJoyUp;
+        this.onPress = onJoyDown;
+        this.onDir = onJoyDir;
 
         this.context = this.canvas.getContext('2d')
 
@@ -91,6 +52,7 @@ export class JoyStick {
 
         this.onMove = (e) => this.move(e)
         this.onUp = (e) => this.up(e)
+        this.onDown = (e) => this.down(e)
 
         this.stick = new stickShape(this.radius, this.radius, '#333333')
         this.stick.update()
@@ -123,12 +85,14 @@ export class JoyStick {
     start() {
         this.canvas.addEventListener('pointerdown', (event) => {
             this.pointer(event)
+            this.onDown()
         })
     }
 
     pointer() {
         this.canvas.addEventListener('pointermove',this.onMove)
         this.canvas.addEventListener('pointerup', this.onUp)
+        this.canvas.addEventListener('pointerdown', this.onDown)
         this.canvas.addEventListener('pointerOut', this.onUp)
     }
 
@@ -145,6 +109,21 @@ export class JoyStick {
         return distancesquared <= radius * radius
     }
 
+
+    fireKey(dir) {
+        const key = DIRECTION[dir];
+        console.log(this.controlElement)
+        if(document.createEventObject) {
+            const eventObj = document.createEventObject();
+            eventObj.keyCode = key;
+            this.controlElement.fireEvent("onkeydown", eventObj);
+        } else if(document.createEvent) {
+            const eventObj = document.createEvent("Events");
+            eventObj.initEvent("keydown", true, true);
+            eventObj.which = key;
+            this.controlElement.dispatchEvent(eventObj);
+        }
+    }
     fireEvent(x,y){
         const xNorm = x * 0.01;
         const yNorm = y * 0.01;
@@ -168,8 +147,9 @@ export class JoyStick {
             console.log("MOVING UP")
             direction = "UP";
         }
-        if(direction && this.onDir){
-            this.onDir(direction)
+        if(direction) {
+            this.fireKey(direction);
+            if(this.onDir) this.onDir(direction)
         }
         if(this.onInput) {
             this.onInput({x,y,xNorm,yNorm, direction})
@@ -200,16 +180,23 @@ export class JoyStick {
 
     up(event) {
         event.preventDefault()
+        if(this.onRelease){
+            this.onRelease();
+        }
         this.canvas.removeEventListener('pointermove', this.onMove)
         this.canvas.removeEventListener('pointerup', this.onUp)
+        this.canvas.removeEventListener('pointerdown', this.onDown)
 
         this.stick.globalAlpha = 0.25
         this.stick.x = this.radius
         this.stick.y = this.radius
         this.stick.update()
-        if(this.onRelease){
-            this.onRelease();
+    }
+    down(event) {
+        if(this.onPress){
+            this.onPress();
         }
+        this.canvas.removeEventListener('pointerdown', this.onDown)
     }
 
     destroy() {

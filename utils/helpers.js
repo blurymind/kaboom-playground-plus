@@ -540,8 +540,21 @@ export const genPreview = (code, resources = []) => {
 
 <body>
 	<script src="kaboom/kaboom.js"></script>
-	<script>
+	<script type="module" src="utils/joystick.js"></script>
+	<div id="joyStick"></div>
+	<script type="module">
+    import { JoyStick } from './utils/joystick.js';
+    
 
+    let onJoyDir = () => {
+      ${code.match(/onKeyDown\(\"(left|right|up|down)\"\,/gm).map(matched=>{
+        // console.log("--", matched)
+        return ""
+      }).join("")}
+    };// can rewrite what this does in ace
+    let onJoyInput = () => {};// can rewrite what this does in ace
+    let onJoyDown = () => {};// can rewrite what this does in ace
+    let onJoyUp = () => {};// can rewrite what this does in ace
     ${code}
     ${generateResources(resources)}
     
@@ -553,8 +566,27 @@ export const genPreview = (code, resources = []) => {
         if(debug.paused) debug.paused = false;
 	}
     // pauseGame()
+    
+    document.addEventListener("keydown", ev=>{
+        console.log(ev)
+    })
+    const control = new JoyStick({
+          element: document.getElementById("joyStick"),
+          style: \`
+        // width: 200px;
+        // height: 200px;
+        // bottom: 10px;
+        // left: 100px;
+      \`,
+          sensitivity: 0.5, // half from distance triggers directions
+          controlElement: document,
+          onJoyDir,
+          onJoyInput,
+          onJoyDown,
+          onJoyUp
+    });
 	</script>
-	<canvas id="kaboomCanvas"></canvas>
+<!--	<canvas id="kaboomCanvas"></canvas>-->
 </body>
 
 </html>

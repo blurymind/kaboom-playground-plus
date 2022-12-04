@@ -45,7 +45,7 @@
           <div class="editor-wrapper"><div id="editor">err</div></div>
           <div class="kaboom-wrapper">
             <div id="kbEditor" class="kb-behind-mode"> </div>
-            <div id="joyStick"></div>
+<!--            <div id="joyStick"></div>-->
           </div>
         </div>
 
@@ -80,7 +80,6 @@
     // import {kaboom} from "./kaboom/kaboom.js"
     import importTiledJson from './importers/tiled.js';
     import { setEditorAutoCompleter } from './utils/aceTools.js';
-    import { JoyStick } from './utils/joystick.js';
     import {store, storeSetValue, saveStateOnElementWhenEvent, loadFromStoreOnStart, initTileMapUrl, initPwaLogic,
       initTilemapEditor, genPreview, kaboomJsExport, triggerOnElementWhenEvent, getValueFromStore, setStorage
     } from './utils/helpers.js';
@@ -106,16 +105,17 @@
     });
     setEditorAutoCompleter(editor);
 
-    const control = new JoyStick({
-      element: document.getElementById("joyStick"),
-      style: `
-        // width: 200px;
-        // height: 200px;
-        // bottom: 10px;
-        // left: 100px;
-      `,
-      sensitivity: 0.5 // half from distance triggers directions
-    });
+    // let control = new JoyStick({
+    //   element: document.getElementById("joyStick"),
+    //   style: `
+    //     // width: 200px;
+    //     // height: 200px;
+    //     // bottom: 10px;
+    //     // left: 100px;
+    //   `,
+    //   sensitivity: 0.5, // half from distance triggers directions
+    //   controlElement: document.getElementById("kaboomIframe")
+    // });
 
     document.getElementById("aceSplitScreenToggle").addEventListener("click", function() {
       let isEditorWide = false; //todo toggle
@@ -149,6 +149,9 @@
                         {file:"kaboom/sprites/ghosty.png", name: "ghosty"},
                 ]//todo add to json editor - with file and name schema - ability to load files from url and base64
         );
+
+
+
         setTimeout(()=>{
           // kaboomIframe.contentWindow.focus();
         }, 200)
