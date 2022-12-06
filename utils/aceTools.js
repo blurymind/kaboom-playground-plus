@@ -109,3 +109,86 @@ export const setEditorAutoCompleter = (editor) => {
         ...editor.completers,
     ];
 }
+
+var filterHistory = function(deltas) {
+    return deltas.filter(function (d) {
+        return d.group != "fold";
+    });
+};
+
+export const sessionToJson = (editor) => {
+    return {
+        content: editor.getSession().getValue(),
+        selection: editor.getSelection().toJSON(),
+        options: editor.getOptions(),
+        mode: editor.session.getMode().$id,
+        scrollTop: editor.session.getScrollTop(),
+        scrollLeft: editor.session.getScrollLeft(),
+        cursor: editor.getCursorPosition(),
+        history: {
+            undo: editor.session.getUndoManager().$undoStack.map(filterHistory),
+            redo: editor.session.getUndoManager().$undoStack.map(filterHistory)
+        },
+        folds: editor.session.getAllFolds().map(function(fold) {
+            return {
+                start       : fold.start,
+                end         : fold.end,
+                placeholder : fold.placeholder
+            };
+        })
+    }
+}
+
+// Thank you stackoverflow :)
+const Range = ace.require('ace/range').Range;
+export const jsonToSession = (editor, state) => {
+    editor.session.setValue(state.content);
+    editor.selection.fromJSON(state.selection);
+    // editor.session.setOptions(state.options);
+    // editor.session.setMode(state.mode);
+    editor.session.setScrollTop(state.scrollTop);
+    editor.session.setScrollLeft(state.scrollLeft);
+    editor.session.$undoManager.$undoStack = state.history.undo;
+    editor.session.$undoManager.$redoStack = state.history.redo;
+    editor.moveCursorTo(state.cursor.row, state.cursor.column);
+    try {
+        state.folds.forEach(function(fold) {
+            console.log("folds --", fold)
+            editor.session.addFold(fold.placeholder, Range.fromPoints(fold.start, fold.end));
+        });
+    } catch(e) {console.log('Fold exception: ' + e)}
+
+}
+
+export function bufferFunctionCall (func, wait, scope) {
+    var timer = null;
+    return function() {
+        if(timer) clearTimeout(timer);
+        var args = arguments;
+        timer = setTimeout(function() {
+            timer = null;
+            func.apply(scope, args);
+        }, wait);
+    };
+}
+
+export function throttle(func, limit) {
+    let lastFunc;
+    let lastRan;
+    return function() {
+        const context = this;
+        const args = arguments;
+        if (!lastRan) {
+            func.apply(context, args)
+            lastRan = Date.now();
+        } else {
+            clearTimeout(lastFunc);
+            lastFunc = setTimeout(function() {
+                if ((Date.now() - lastRan) >= limit) {
+                    func.apply(context, args);
+                    lastRan = Date.now();
+                }
+            }, limit - (Date.now() - lastRan));
+        }
+    }
+}

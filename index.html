@@ -15,7 +15,8 @@
     <script src="tilemap-editor/src/tilemap-editor.js"></script>
     <link rel="stylesheet" type="text/css" href="tilemap-editor/src/styles.css" />
     <script src="kaboom/kaboom.js"></script>
-
+    <script src="utils/external/jszip.min.js"></script>
+    <script src="utils/external/jszip-utils.min.js"></script>
 
     <script src="/ace-builds/src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
     <script src="/ace-builds/src-noconflict/ext-language_tools.js"></script>
@@ -40,7 +41,7 @@
       <input type="radio" id="tab2" name="tab-group">
       <label for="tab2">Code</label>
       <div class="head-tab-content">
-        <div id="aceSplitScreenToggle" style="right:50%; display:none">➡️</div>
+        <div id="aceSplitScreenToggle">➡️</div>
         <div class="editor-tab">
           <div class="editor-wrapper"><div id="editor">err</div></div>
           <div class="kaboom-wrapper">
@@ -55,7 +56,9 @@
       <input type="radio" id="tab3" name="tab-group">
       <label for="tab3">Play</label>
       <div class="head-tab-content">
-        <p>text 3</p>
+        <p>Download a zipped copy of your game:</p>
+        <p id="exportProgress"></p>
+        <button id="exportGame">Export game</button>
       </div>
     </div>
     <div id="reloadKb">💥</div>
@@ -74,114 +77,87 @@
   <script type="module" src="utils/typeData.js"></script>
   <script type="module" src="utils/aceTools.js"></script>
   <script type="module" src="utils/helpers.js"></script>
-  <script type="module" src="utils/joystick.js"></script>
+  <script type="module" src="kaboom/deploy/joystick.js"></script>
 
   <script type="module">
     // import {kaboom} from "./kaboom/kaboom.js"
     import importTiledJson from './importers/tiled.js';
-    import { setEditorAutoCompleter } from './utils/aceTools.js';
-    import {store, storeSetValue, saveStateOnElementWhenEvent, loadFromStoreOnStart, initTileMapUrl, initPwaLogic,
-      initTilemapEditor, genPreview, kaboomJsExport, triggerOnElementWhenEvent, getValueFromStore, setStorage
+    import { setEditorAutoCompleter, jsonToSession, sessionToJson, bufferFunctionCall, throttle } from './utils/aceTools.js';
+    import { storeSetValue, saveStateOnElementWhenEvent, loadFromStoreOnStart, initTileMapUrl, initPwaLogic,
+      initTilemapEditor, genPreview, kaboomJsExport, triggerOnElementWhenEvent, getValueFromStore, onExportGame
     } from './utils/helpers.js';
     import {aceEditorSeed, tilemapEditorSeed} from './utils/seed.js'
     importTiledJson();
-
-
-    loadFromStoreOnStart()
+    loadFromStoreOnStart();
 
     console.log("editor init")
     ace.require("ace/ext/language_tools");
     const editor = ace.edit("editor", {
       theme: 'ace/theme/dracula',
       mode: 'ace/mode/javascript',
-      value: getValueFromStore('editorValue', aceEditorSeed),
+      value: aceEditorSeed,
       autoScrollEditorIntoView: true,
       enableBasicAutocompletion: true,
       enableLiveAutocompletion: true,
       behavioursEnabled: true,
       useWrapMode: true,
     });
-    editor.getSession().on('change', ev => {
-      storeSetValue('editorValue', editor.getValue())
-    });
     setEditorAutoCompleter(editor);
 
-    const editorState = getValueFromStore('editorState',
-            { scrollTop: 0, cursor: {column: 0, row: 0,}, folds: {["0-0"]: false}}
-    );
-    // storeSetValue('editorState', {
-    //   folds: {
-    //
-    //     // [`${data.start.row}-${data.end.row}`]: action === "add"
-    //     [`er`]:2
-    //   },
-    // }, true);
+    const storeAceSession = () => {
+      const state = sessionToJson(editor);
+      storeSetValue('aceEditorState', state)
+      console.log({state})
+    }
+    editor.getSession().selection.on('changeSelection', throttle(storeAceSession, 500));
+    editor.getSession().selection.on('changeCursor', throttle(storeAceSession, 500));
+    editor.getSession().on('changeScrollLeft', throttle(storeAceSession, 500));
+    editor.getSession().on('changeScrollTop', throttle(storeAceSession, 500));
+    editor.getSession().on('change', throttle(storeAceSession, 500));
+    editor.getSession().on('changeFold', throttle(storeAceSession, 500));
 
-    // sore/restore editor state
-    editor.renderer.on('afterRender', function() {
-      storeSetValue('editorState', {
-        scrollTop: editor.session.getScrollTop(),
-        cursor: editor.getCursorPosition()
-      }, true)
-    });
+    const aceEditorState = getValueFromStore('aceEditorState');
+    if(aceEditorState) {
+      console.log("apply ace editor state -- ", aceEditorState)
+      jsonToSession(editor, aceEditorState); // this triggers the callbacks
+    }
 
-    editor.getSession().on('changeFold', ({data, action}) =>{
-      const prevState = getValueFromStore('editorState');
-      const foldWidgets = editor.session.foldWidgets
-      console.log("fold", {data, foldWidgets, action})
-      // const fw = foldWidgets[row]; // use cached value
-
-      storeSetValue('editorState', {
-        ...prevState,
-        folds: {
-          ...prevState.folds,
-          [`${data.range.start.row}-${data.range.end.row}`]: action === "add"
-        },
-      }, true);
-    })
-
-    console.log("Ace restore state", editorState)
-    editor.session.setScrollTop(editorState.scrollTop)
-    editor.moveCursorTo(editorState.cursor.row, editorState.cursor.column);
-
-
-    setTimeout(()=>{
-      // Object.entries(editorState.folds).forEach(([key,val])=>{
-      //   if(val){
-      //     const [start, end] = key.split("-");
-      //     console.log("fold -- ", {start:parseInt(start), end: parseInt(end)})
-      //     editor.getSession().foldAll(parseInt(start) +1, parseInt(end)+1)
-      //   }
-      // })
-      editor.getSession().foldAll(9, 31) //9 to 31
-    }, 1200)
-
-    // let control = new JoyStick({
-    //   element: document.getElementById("joyStick"),
-    //   style: `
-    //     // width: 200px;
-    //     // height: 200px;
-    //     // bottom: 10px;
-    //     // left: 100px;
-    //   `,
-    //   sensitivity: 0.5, // half from distance triggers directions
-    //   controlElement: document.getElementById("kaboomIframe")
-    // });
-
+    const updateWideEditorState = (isEditorWide) => {
+      if(isEditorWide){
+        document.getElementById("aceSplitScreenToggle").classList.add("wideEditor");
+        document.getElementById("editor").classList.add("wideEditor");
+        document.getElementById("kaboomIframe").classList.add("wideEditor");
+      } else {
+        document.getElementById("aceSplitScreenToggle").classList.remove("wideEditor");
+        document.getElementById("editor").classList.remove("wideEditor");
+        document.getElementById("kaboomIframe").classList.remove("wideEditor");
+      }
+    }
     document.getElementById("aceSplitScreenToggle").addEventListener("click", function() {
-      let isEditorWide = false; //todo toggle
-      document.getElementById("aceSplitScreenToggle").style.right = isEditorWide ? "0%" : undefined;
-      document.getElementById("editor").style.right = isEditorWide ? 0 : "50vw";
-      document.getElementById("editor").style.opacity = isEditorWide ? 0.85 : undefined;
-      document.getElementById("kaboomIframe").style.width = isEditorWide ? "90vw" : undefined;
-      isEditorWide = !isEditorWide
+      const isEditorWide = getValueFromStore('isEditorWide', false);
+      storeSetValue('isEditorWide', !isEditorWide)
+      reRunKaboom()
     })
+
     // Example data structure that tiledmap-editor can read and write
     //https://imgur.com/a/SjjsjTm
     // kaboomJs example exporter
+    const reRunKaboom = () => {
+      const kaboomIframe = document.getElementById('kaboomIframe');
+      updateWideEditorState(getValueFromStore('isEditorWide'))
+      const kbExportData = TilemapEditor.exporters.kaboomJs.getData()
+      // const tileMapData = getValueFromStore('tileMapEditorData', tilemapEditorSeed, tileMapEditorState)
+      console.log({editor: editor.getValue(), TilemapEditor, kbExportData})
+      kaboomIframe.srcdoc = genPreview(
+              editor.getValue(),
+              [
+                {file:"kaboom/sprites/bean.png", name: "bean"},
+                {file:"kaboom/sprites/ghosty.png", name: "ghosty"},
+              ]//todo add to json editor - with file and name schema - ability to load files from url and base64
+      );
+    };
 
-
-    export const initKaboom = (tileMapEditorState) => {
+    export const initKaboom = () => {
       // console.log("Ini KABOOM", tileMapEditorState,"KB data:", TilemapEditor.exporters.kaboomJs.getData())
       const kaboomIframe = document.createElement('iframe');
       kaboomIframe.id = 'kaboomIframe';
@@ -189,27 +165,9 @@
       iframeWrapper.id = 'kaboomCanvas';
       iframeWrapper.appendChild(kaboomIframe);
       document.getElementById('kbEditor').appendChild(iframeWrapper);
-      const reRun = () => {
-        const kbExportData = TilemapEditor.exporters.kaboomJs.getData()
-        const tileMapData = getValueFromStore('tileMapEditorData', tilemapEditorSeed, tileMapEditorState)
-        console.log({editor: editor.getValue(), tileMapData, TilemapEditor, kbExportData})
-        kaboomIframe.srcdoc = genPreview(
-                editor.getValue(),
-                [
-                        {file:"kaboom/sprites/bean.png", name: "bean"},
-                        {file:"kaboom/sprites/ghosty.png", name: "ghosty"},
-                ]//todo add to json editor - with file and name schema - ability to load files from url and base64
-        );
-
-
-
-        setTimeout(()=>{
-          // kaboomIframe.contentWindow.focus();
-        }, 200)
-      };
-      reRun()
+      reRunKaboom()
       document.getElementById('reloadKb').addEventListener('click', ()=>{
-        reRun()
+        reRunKaboom()
       })
 
       kaboomIframe.addEventListener('load', ()=> {
@@ -220,16 +178,21 @@
         kaboomIframe.addEventListener('click', unPauseGame);
         setTimeout(()=>editor.focus(),200);
       })
-
     }
 
+    //TODO need some code that collects these
+    const filesToPack = ["kaboom/deploy/joystick.js", "kaboom/sprites/apple.png", "kaboom/kaboom.js"]
+    document.getElementById("exportGame").addEventListener("click",()=>{
+      onExportGame(editor, filesToPack);
+    });
 
+    // initKaboom();
     // destroy kaboom when not on tab
     function onTabChange(tab){
       console.log("tab changed", tab)
       const tileMapEditorData = getValueFromStore('tileMapEditorData', {});
       // saveAppState();
-      if(tab !== 'tab2') {
+      if(tab === 'tab1') {
         console.log("destroy tab")
         document.getElementById('kbEditor').innerHTML = "";
       } else { //on kaboom

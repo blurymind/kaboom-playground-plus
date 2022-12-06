@@ -166,8 +166,10 @@ body {
 #aceSplitScreenToggle {
     position:absolute;
     z-index: 666;
-    top: 20%;
-    font-size: 29px;
+    top: -27px;
+    font-size: 23px;
+    opacity: 0.7;
+    background-blend-mode: multiply;
 }
 @media only screen and (max-width: 600px) {
     .editor-tab {
@@ -186,6 +188,20 @@ body {
     }
 }
 
+#aceSplitScreenToggle{
+    right: 50%;
+}
+#aceSplitScreenToggle.wideEditor {
+    right: 0;
+    transform: scale(-1, 1);
+}
+#editor.wideEditor {
+    right: 0;
+    opacity: 0.94;
+}
+#kaboomIframe.wideEditor {
+    width: 90vw;
+}
 /*@media screen and (orientation:portrait) { … }*/
 @media only screen and (orientation:landscape) and (pointer:coarse) {
     #editor {

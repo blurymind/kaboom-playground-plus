@@ -11,10 +11,9 @@ const updateStorageIndicator= () => {
 }
 
 updateStorageIndicator();
-export const store = JSON.parse(localStorage.getItem('kaboom-playground')) || {editorValue: 'console.log("Hi :)");'};
-export const getStore = () => JSON.parse(localStorage.getItem('kaboom-playground')) || {editorValue: 'console.log("Hi :)");'};
-export const storeSetValue = (key, value, spreadValue = false) => {
-    const spreadPrev = typeof getStore()[key]?.value != null && typeof getStore()[key]?.value === "object";
+export const getStore = () => JSON.parse(localStorage.getItem('kaboom-playground')) || {};
+export const storeSetValue = (key, value, spreadValue = true) => {
+    const spreadPrev = spreadValue && typeof getStore()[key]?.value != null && typeof getStore()[key]?.value === "object";
     const newValue = {...getStore(), [key]: {value: spreadPrev? {...(getStore()[key]?.value ?? {}), ...(value ?? {}) } : value }}
     // console.log({spreadPrev, newValue, store: getStore()})
     localStorage.setItem('kaboom-playground', JSON.stringify(
@@ -30,15 +29,15 @@ export const getValueFromStore = (storeId, failValue = "",valueKey = "") =>{
 }
 
 export const setStorage = (id, key, value) =>{
-    localStorage.setItem('kaboom-playground', JSON.stringify({...store, [key]: {id, key, value}}));
+    localStorage.setItem('kaboom-playground', JSON.stringify({...getStore(), [key]: {id, key, value}}));
     updateStorageIndicator();
 }
 export const saveStateOnElementWhenEvent = (id, event, key, value, setTo) => {
     document.getElementById(id).addEventListener(event, e=>{
         // setStorage(id, key, value, setTo)
         console.log()
-        localStorage.setItem('kaboom-playground', JSON.stringify({...store, [key]: {id, event, key, value, setTo}}));
-        console.log("saveStateOnElementWhenEvent",store)
+        localStorage.setItem('kaboom-playground', JSON.stringify({...getStore(), [key]: {id, event, key, value, setTo}}));
+        console.log("saveStateOnElementWhenEvent",getStore())
         updateStorageIndicator();
     })
 }
@@ -48,8 +47,7 @@ export const triggerOnElementWhenEvent = (id, event, cb) => {
     })
 }
 export const loadFromStoreOnStart = () => {
-    console.log("loadFromStoreOnStart", store)
-    Object.entries(store).forEach(([storedKey, storedValue])=>{
+    Object.entries(getStore()).forEach(([storedKey, storedValue])=>{
         //console.log("LOAD -- ", storedKey, storedValue)
         const {id, event, key, value, setTo} = storedValue;
         if(id && setTo && document.getElementById(id)) document.getElementById(id)[setTo] = value;
@@ -59,18 +57,18 @@ export const loadFromStoreOnStart = () => {
 export const getMapFromGist = (gistId, cb) => {
     console.log("Trying to get gist", `https://api.github.com/gists/=${gistId}`)
     fetch(`https://api.github.com/gists/${gistId}`).then(blob => blob.json())
-        .then(data => {
-            let mapFound
-            Object.entries(data.files).forEach(([key,val])=>{
-                if(!mapFound && key.endsWith(".json")){
-                    fetch(val.raw_url).then(blob => blob.json()).then(jsonData=>{
-                        mapFound = jsonData;
-                        console.log("Got map!", mapFound)
-                        cb(mapFound)
-                    })
-                }
-            })
-        });
+    .then(data => {
+        let mapFound
+        Object.entries(data.files).forEach(([key,val])=>{
+            if(!mapFound && key.endsWith(".json")){
+                fetch(val.raw_url).then(blob => blob.json()).then(jsonData=>{
+                    mapFound = jsonData;
+                    console.log("Got map!", mapFound)
+                    cb(mapFound)
+                })
+            }
+        })
+    });
 }
 
 //Get imgur gallery from an id  -- example: SjjsjTm
@@ -121,7 +119,6 @@ export const uploadImageToImgur = (blob) => {
 };
 
 export const kaboomJsExport = ({flattenedData, maps, tileSets, activeMap, downloadAsTextFile}) =>{
-
     const getTileData = (tileSet, tileSetIdx) => Array.from({length: tileSet.tileCount}, (x, i) => i).map(tile=>{
         const x = tile % tileSet.gridWidth;
         const y = Math.floor(tile / tileSet.gridWidth);
@@ -404,6 +401,128 @@ export const initTileMapUrl = () => {
     }
 }
 
+export const genExport = (code, resources = []) => {
+    return `
+<!DOCTYPE html>
+
+<html>
+
+<head>
+	<title>kaboom</title>
+	<meta charset="utf-8">
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+		}
+		html,
+		body {
+			width: 100%;
+			height: 100%;
+			overflow: hidden;
+		}
+	</style>
+</head>
+
+<body>
+	<script src="kaboom.js"></script>
+	<script src="joystick.js"></script>
+	<script>
+    ${code}
+    ${generateResources(resources)}
+	</script>
+	<canvas id="kaboomCanvas"></canvas>
+</body>
+
+</html>
+	`;
+};
+ export function download(filename, text) {
+     var element = document.createElement('a');
+     // element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+     element.setAttribute('href', 'data:application/zip;' + encodeURIComponent(text));
+     element.setAttribute('download', filename);
+     element.style.display = 'none';
+     document.body.appendChild(element);
+     element.click();
+
+     document.body.removeChild(element);
+ }
+
+//export game //////////////
+function urlToPromise(url) {
+    return new Promise(function(resolve, reject) {
+        JSZipUtils.getBinaryContent(url, function (err, data) {
+            if(err) {
+                reject(err);
+            } else {
+                resolve(data);
+            }
+        });
+    });
+}
+function saveFileFromBlob(blob, filename) {
+    if (window.navigator.msSaveOrOpenBlob) {
+        window.navigator.msSaveOrOpenBlob(blob, filename);
+    } else {
+        const a = document.createElement('a');
+        document.body.appendChild(a);
+        const url = window.URL.createObjectURL(blob);
+        a.href = url;
+        a.download = filename;
+        a.click();
+        setTimeout(() => {
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }, 0)
+    }
+}
+
+export const onExportGame = (editor, filesToPack) => {
+    const contents = genExport(
+        editor.getValue(),
+        [
+            {file:"kaboom/sprites/bean.png", name: "bean"},
+            {file:"kaboom/sprites/ghosty.png", name: "ghosty"},
+        ]//todo add to json editor - with file and name schema - ability to load files from url and base64
+    );
+    var zip = new JSZip();
+    // index file
+    zip.file('index.html', contents);
+
+    // include files
+    var imgFolder = zip.folder('images');
+    filesToPack.forEach(filePath =>{
+        var url = filePath;
+        var filename = url.replace(/.*\//g, "");
+
+        if(filename.endsWith(".png") || filename.endsWith(".jpg")){
+            imgFolder.file(filename, urlToPromise(url), {binary:true});
+        } else if (filename.endsWith(".js")){
+            zip.file(filename, urlToPromise(url), {binary:true});
+        } else {
+            //todo
+        }
+    })
+    // when everything has been downloaded, we can trigger the dl
+    zip.generateAsync({type:"blob"}, function updateCallback(metadata) {
+        var msg = "progression : " + metadata.percent.toFixed(2) + " %";
+        if(metadata.currentFile) {
+            msg += ", current file = " + metadata.currentFile;
+        }
+        document.getElementById("exportProgress").innerText = metadata.percent === 100 ? "Done!" : `${metadata.percent|0}%`
+        console.log(msg, metadata.percent|0)
+        // showMessage(msg);
+        // updatePercent(metadata.percent|0);
+    }).then(function callback(blob) {
+        saveFileFromBlob(blob, "myGame.zip")
+    }, function (e) {
+        console.error(e);
+        document.getElementById("exportProgress").innerText = "Failed :( see console for details";
+        // showError(e);
+    });
+}
+
 export const initPwaLogic = () => {
     // Pwa stuff
     let newWorker;
@@ -546,16 +665,11 @@ export const genPreview = (code, resources = []) => {
 
 <body>
 	<script src="kaboom/kaboom.js"></script>
-	<script type="module" src="utils/joystick.js"></script>
+	<script type="module" src="kaboom/deploy/joystick.js"></script>
 	<div id="joyStick"></div>
 	<script type="module">
-    import { JoyStick } from './utils/joystick.js';
+    import { JoyStick } from '/kaboom/deploy/joystick.js';
     
-
-    let onJoyDir = () => {};// can rewrite what this does in ace
-    let onJoyInput = () => {};// can rewrite what this does in ace
-    let onJoyDown = () => {};// can rewrite what this does in ace
-    let onJoyUp = () => {};// can rewrite what this does in ace
     ${code}
     ${generateResources(resources)}
     
@@ -571,19 +685,7 @@ export const genPreview = (code, resources = []) => {
     document.addEventListener("keydown", ev=>{
         console.log(ev)
     })
-    const control = new JoyStick({
-          element: document.getElementById("joyStick"),
-          style: \`
-            opacity: 0.7;        
-      \`,
-          sensitivity: 0.5, // half from distance triggers directions
-          controlElement: document,
-          onJoyDir,
-          onJoyInput,
-          onJoyDown,
-          onJoyUp,
-          showOnlyOnMobile: "landscape"
-    });
+
 	</script>
 <!--	<canvas id="kaboomCanvas"></canvas>-->
 </body>

@@ -62,7 +62,7 @@ export class JoyStick {
 
     addStyle() {
         const show = this.showOnlyOnMobile ? navigator.userAgent.match(/Android/i) ||
-            navigator.userAgent.match(/iPhone/i) : false
+            navigator.userAgent.match(/iPhone/i) : true;
 
         const styleSheet = document.createElement('style')
         styleSheet.type = 'text/css'
