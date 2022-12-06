@@ -128,7 +128,6 @@ export class JoyStick {
         return distancesquared <= radius * radius
     }
 
-
     fireKey(dir) {
         const key = DIRECTION[dir];
         console.log(this.controlElement)

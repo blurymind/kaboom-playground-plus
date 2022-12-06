@@ -89,6 +89,7 @@
 
     loadFromStoreOnStart()
 
+    console.log("editor init")
     ace.require("ace/ext/language_tools");
     const editor = ace.edit("editor", {
       theme: 'ace/theme/dracula',
@@ -104,6 +105,56 @@
       storeSetValue('editorValue', editor.getValue())
     });
     setEditorAutoCompleter(editor);
+
+    const editorState = getValueFromStore('editorState',
+            { scrollTop: 0, cursor: {column: 0, row: 0,}, folds: {["0-0"]: false}}
+    );
+    // storeSetValue('editorState', {
+    //   folds: {
+    //
+    //     // [`${data.start.row}-${data.end.row}`]: action === "add"
+    //     [`er`]:2
+    //   },
+    // }, true);
+
+    // sore/restore editor state
+    editor.renderer.on('afterRender', function() {
+      storeSetValue('editorState', {
+        scrollTop: editor.session.getScrollTop(),
+        cursor: editor.getCursorPosition()
+      }, true)
+    });
+
+    editor.getSession().on('changeFold', ({data, action}) =>{
+      const prevState = getValueFromStore('editorState');
+      const foldWidgets = editor.session.foldWidgets
+      console.log("fold", {data, foldWidgets, action})
+      // const fw = foldWidgets[row]; // use cached value
+
+      storeSetValue('editorState', {
+        ...prevState,
+        folds: {
+          ...prevState.folds,
+          [`${data.range.start.row}-${data.range.end.row}`]: action === "add"
+        },
+      }, true);
+    })
+
+    console.log("Ace restore state", editorState)
+    editor.session.setScrollTop(editorState.scrollTop)
+    editor.moveCursorTo(editorState.cursor.row, editorState.cursor.column);
+
+
+    setTimeout(()=>{
+      // Object.entries(editorState.folds).forEach(([key,val])=>{
+      //   if(val){
+      //     const [start, end] = key.split("-");
+      //     console.log("fold -- ", {start:parseInt(start), end: parseInt(end)})
+      //     editor.getSession().foldAll(parseInt(start) +1, parseInt(end)+1)
+      //   }
+      // })
+      editor.getSession().foldAll(9, 31) //9 to 31
+    }, 1200)
 
     // let control = new JoyStick({
     //   element: document.getElementById("joyStick"),

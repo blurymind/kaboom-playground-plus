@@ -12,15 +12,21 @@ const updateStorageIndicator= () => {
 
 updateStorageIndicator();
 export const store = JSON.parse(localStorage.getItem('kaboom-playground')) || {editorValue: 'console.log("Hi :)");'};
-export const storeSetValue = (key, value) => {
-    localStorage.setItem('kaboom-playground', JSON.stringify({...store, [key]: {value}}));
+export const getStore = () => JSON.parse(localStorage.getItem('kaboom-playground')) || {editorValue: 'console.log("Hi :)");'};
+export const storeSetValue = (key, value, spreadValue = false) => {
+    const spreadPrev = typeof getStore()[key]?.value != null && typeof getStore()[key]?.value === "object";
+    const newValue = {...getStore(), [key]: {value: spreadPrev? {...(getStore()[key]?.value ?? {}), ...(value ?? {}) } : value }}
+    // console.log({spreadPrev, newValue, store: getStore()})
+    localStorage.setItem('kaboom-playground', JSON.stringify(
+        newValue
+    ));
     updateStorageIndicator();
 }
 
 export const getValueFromStore = (storeId, failValue = "",valueKey = "") =>{
-    console.log("get store val", store)
-    if(!valueKey) return store[storeId]?.value || failValue;
-    return store[storeId]?.value[valueKey] || failValue;
+    console.log("get store val", {store: getStore()})
+    if(!valueKey) return getStore()[storeId]?.value || failValue;
+    return getStore()[storeId]?.value[valueKey] || failValue;
 }
 
 export const setStorage = (id, key, value) =>{
