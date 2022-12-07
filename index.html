@@ -86,6 +86,8 @@
               <div class="resources-item">thumb3</div>
             </div>
             <div class="resources-editor">
+              <div id="resourcePreviewer" class="checkerboard"><img id="resourcePreviewerThumb" src=""/></div>
+              <div id="resourcePreviewerSrc"></div>
               resource list (add/remove/replace) -> resource frame(add/remove) -> resource (edit)
               https://github.com/devmotheg/pixel-art-editor
 
@@ -228,16 +230,40 @@
 
     const collectPresentImageResources = () => {
       // todo merge with other image resources in the app
-      return Object.values(TilemapEditor.getTilesets()).map(tileset=>tileset.src);
+      return Object.values(TilemapEditor.getTilesets()).map(tileset=> ({
+        src: tileset.src,
+        type: "tileset",
+      }));
     }
 
+    const updateResourcePreviewer = (src, type) =>{
+      document.getElementById("resourcePreviewerThumb").src = src;
+      document.getElementById("resourcePreviewerSrc").innerText = `${type}: ${src}`;
+    }
     // todo merge with filesToPack at export, put in localStorage
     const updateImageResources = ()=>{
-      const imageUrls = collectPresentImageResources()
-      document.getElementById("imageResourcesSelector").innerHTML =
-              imageUrls.map(src=>`
-                <div class="resources-item"><img src="${src}"></img></div>
-                `).join("")
+      const selectedThumb = getValueFromStore('resourcesSelectedResource', 0);
+      const imageUrls = collectPresentImageResources();
+      document.getElementById("imageResourcesSelector").innerHTML = "";
+      imageUrls.forEach((image, i)=>{
+        const src = image.src;
+        const type = image.type;
+        const thumbWrapper = document.createElement("div");
+        thumbWrapper.className = `resources-item ${selectedThumb === i ? "selected" : ""} ${type} checkerboard`;
+        thumbWrapper.id = `tilemap-image-${i}-thumb`
+        const thumb = document.createElement("img");
+        thumb.src = src;
+        thumbWrapper.setAttribute('src', src);
+        thumbWrapper.addEventListener("click", function(e){
+          document.querySelectorAll('.resources-item').forEach(e=>e.classList.remove("selected"));
+          storeSetValue('resourcesSelectedResource', i);
+          thumbWrapper.className = `resources-item selected ${type} checkerboard`;
+          updateResourcePreviewer(src, type);
+        })
+        thumbWrapper.appendChild(thumb)
+        document.getElementById("imageResourcesSelector").appendChild(thumbWrapper)
+      })
+      updateResourcePreviewer(imageUrls[selectedThumb].src, imageUrls[selectedThumb].type);
     }
     // initKaboom();
     // destroy kaboom when not on tab
