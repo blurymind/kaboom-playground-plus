@@ -116,6 +116,11 @@ var filterHistory = function(deltas) {
     });
 };
 
+const beautify = ace.require('ace/ext/beautify');
+export const formatAceCode = (editor) =>{
+    beautify.beautify(editor.session);
+}
+
 export const sessionToJson = (editor) => {
     return {
         content: editor.getSession().getValue(),

@@ -478,6 +478,19 @@ function saveFileFromBlob(blob, filename) {
     }
 }
 
+export const updateExportTabPreview = (editor) => {
+    const contents = genExport(
+        editor.getValue(),
+        [
+            {file:"kaboom/sprites/bean.png", name: "bean"},
+            {file:"kaboom/sprites/ghosty.png", name: "ghosty"},
+        ]//todo add to json editor - with file and name schema - ability to load files from url and base64
+    );
+    document.getElementById("generatedIndexFileSrcPreview").textContent = contents;
+    hljs.initHighlighting.called = false;
+    hljs.initHighlighting();
+}
+
 export const onExportGame = (editor, filesToPack) => {
     const contents = genExport(
         editor.getValue(),
@@ -515,7 +528,7 @@ export const onExportGame = (editor, filesToPack) => {
         // showMessage(msg);
         // updatePercent(metadata.percent|0);
     }).then(function callback(blob) {
-        saveFileFromBlob(blob, "myGame.zip")
+        saveFileFromBlob(blob, "myGame.zip");
     }, function (e) {
         console.error(e);
         document.getElementById("exportProgress").innerText = "Failed :( see console for details";
@@ -523,6 +536,7 @@ export const onExportGame = (editor, filesToPack) => {
     });
 }
 
+//// PWA logic
 export const initPwaLogic = () => {
     // Pwa stuff
     let newWorker;

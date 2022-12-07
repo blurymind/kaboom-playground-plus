@@ -17,9 +17,13 @@
     <script src="kaboom/kaboom.js"></script>
     <script src="utils/external/jszip.min.js"></script>
     <script src="utils/external/jszip-utils.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="utils/external/hljs-default.min.css" />
+    <link rel="stylesheet" type="text/css" href="utils/external/hljs-dracula.css" />
+    <script src="utils/external/highlight.min.js"></script>
 
     <script src="/ace-builds/src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
     <script src="/ace-builds/src-noconflict/ext-language_tools.js"></script>
+    <script src="/ace-builds/src-noconflict/ext-beautify.js"></script>
 
     <title>Kaboom Playground +</title>
   </head>
@@ -54,13 +58,45 @@
     </div>
     <div class="head-tab">
       <input type="radio" id="tab3" name="tab-group">
-      <label for="tab3">Play</label>
-      <div class="head-tab-content">
+      <label for="tab3">Export</label>
+      <div class="head-tab-content export-game">
         <p>Download a zipped copy of your game:</p>
         <p id="exportProgress"></p>
         <button id="exportGame">Export game</button>
+        <div class="container">
+        <pre id="generatedIndexFileSrcPreviewContainer" contentEditable="true" spellcheck="false">
+          <code class="text/javascript" id="generatedIndexFileSrcPreview">
+            ...
+        </code></pre>
+        </div>
+<!--        <br/>-->
+<!--        <blockquote id="generatedIndexFileSrcPreview" contenteditable="true">-->
+<!--          Generated game index.html file ...-->
+<!--        </blockquote>-->
+      </div>
+      <div class="head-tab">
+        <input type="radio" id="tab4" name="tab-group" checked="true">
+        <label for="tab4">Pixel editor/resources</label>
+        <div class="head-tab-content game-resources">
+          <div>
+            <div id="imageResourcesSelector" class="resources-list">
+              also show this on exports?
+              <div class="resources-item">thumb1</div>
+              <div class="resources-item">thumb2</div>
+              <div class="resources-item">thumb3</div>
+            </div>
+            <div class="resources-editor">
+              resource list (add/remove/replace) -> resource frame(add/remove) -> resource (edit)
+              https://github.com/devmotheg/pixel-art-editor
+
+              Idea: make https://giventofly.github.io/pixelit/ work with gifs, output as  strip -> remove bg and draw ontop -> profit
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
+
     <div id="reloadKb">💥</div>
 
 
@@ -82,9 +118,10 @@
   <script type="module">
     // import {kaboom} from "./kaboom/kaboom.js"
     import importTiledJson from './importers/tiled.js';
-    import { setEditorAutoCompleter, jsonToSession, sessionToJson, bufferFunctionCall, throttle } from './utils/aceTools.js';
+    import { setEditorAutoCompleter, jsonToSession, sessionToJson, bufferFunctionCall, throttle, formatAceCode } from './utils/aceTools.js';
     import { storeSetValue, saveStateOnElementWhenEvent, loadFromStoreOnStart, initTileMapUrl, initPwaLogic,
-      initTilemapEditor, genPreview, kaboomJsExport, triggerOnElementWhenEvent, getValueFromStore, onExportGame
+      initTilemapEditor, genPreview, kaboomJsExport, triggerOnElementWhenEvent, getValueFromStore, onExportGame,
+      updateExportTabPreview
     } from './utils/helpers.js';
     import {aceEditorSeed, tilemapEditorSeed} from './utils/seed.js'
     importTiledJson();
@@ -136,7 +173,7 @@
     document.getElementById("aceSplitScreenToggle").addEventListener("click", function() {
       const isEditorWide = getValueFromStore('isEditorWide', false);
       storeSetValue('isEditorWide', !isEditorWide)
-      reRunKaboom()
+      reRunKaboom();
     })
 
     // Example data structure that tiledmap-editor can read and write
@@ -158,6 +195,7 @@
     };
 
     export const initKaboom = () => {
+      if (document.getElementById("kaboomCanvas")) return;
       // console.log("Ini KABOOM", tileMapEditorState,"KB data:", TilemapEditor.exporters.kaboomJs.getData())
       const kaboomIframe = document.createElement('iframe');
       kaboomIframe.id = 'kaboomIframe';
@@ -167,7 +205,8 @@
       document.getElementById('kbEditor').appendChild(iframeWrapper);
       reRunKaboom()
       document.getElementById('reloadKb').addEventListener('click', ()=>{
-        reRunKaboom()
+        reRunKaboom();
+        formatAceCode(editor);
       })
 
       kaboomIframe.addEventListener('load', ()=> {
@@ -186,6 +225,20 @@
       onExportGame(editor, filesToPack);
     });
 
+
+    const collectPresentImageResources = () => {
+      // todo merge with other image resources in the app
+      return Object.values(TilemapEditor.getTilesets()).map(tileset=>tileset.src);
+    }
+
+    // todo merge with filesToPack at export, put in localStorage
+    const updateImageResources = ()=>{
+      const imageUrls = collectPresentImageResources()
+      document.getElementById("imageResourcesSelector").innerHTML =
+              imageUrls.map(src=>`
+                <div class="resources-item"><img src="${src}"></img></div>
+                `).join("")
+    }
     // initKaboom();
     // destroy kaboom when not on tab
     function onTabChange(tab){
@@ -199,24 +252,38 @@
         // get it from stored state instead
         initKaboom(tileMapEditorData)
       }
+      if(tab === 'tab3'){
+        updateExportTabPreview(editor);
+      }
+      if(tab==='tab4'){
+        updateImageResources()
+      }
     }
     saveStateOnElementWhenEvent('tab1','change', 'activeTab', 1, 'checked')
     saveStateOnElementWhenEvent('tab2','change', 'activeTab', 2, 'checked')
     saveStateOnElementWhenEvent('tab3','change', 'activeTab', 3, 'checked')
+    saveStateOnElementWhenEvent('tab4','change', 'activeTab', 4, 'checked')
     triggerOnElementWhenEvent('tab1','change',onTabChange)
     triggerOnElementWhenEvent('tab2','change',onTabChange)
     triggerOnElementWhenEvent('tab3','change',onTabChange)
+    triggerOnElementWhenEvent('tab4','change',onTabChange)
 
     initTilemapEditor();
     if (getValueFromStore('activeTab', 0) === 2) initKaboom(getValueFromStore('activeTab', 0))
     // console.log("Got App State:",TilemapEditor.getState())
-    document.addEventListener('beforeunload', function(event) {
-      alert("unload")
-      // saveAppState();
+    // doesnt work on edge
+    // document.addEventListener('beforeunload', function(event) {
+    //   alert("unload")
+    //   // saveAppState();
+    // });
+
+    document.addEventListener("DOMContentLoaded", ()=>{
+      updateExportTabPreview(editor);
+      setTimeout(()=>{
+        updateImageResources();
+      }, 900)
     });
-    // TilemapEditor.onUpdate(state=>{
-    //   console.log("Updated", state)
-    // }, 200)
+
     initTileMapUrl();
     // Pwa stuff
     initPwaLogic();
