@@ -1,4 +1,5 @@
 import {aceEditorSeed, tilemapEditorSeed} from './seed.js'
+import {throttle} from './aceTools.js'
 // Persist GUI state
 const updateStorageIndicator= () => {
     navigator.storage.estimate().then(function(estimate) {
@@ -13,13 +14,17 @@ const updateStorageIndicator= () => {
 updateStorageIndicator();
 export const getStore = () => JSON.parse(localStorage.getItem('kaboom-playground')) || {};
 export const storeSetValue = (key, value, spreadValue = true) => {
-    const spreadPrev = spreadValue && typeof getStore()[key]?.value != null && typeof getStore()[key]?.value === "object";
-    const newValue = {...getStore(), [key]: {value: spreadPrev? {...(getStore()[key]?.value ?? {}), ...(value ?? {}) } : value }}
-    // console.log({spreadPrev, newValue, store: getStore()})
-    localStorage.setItem('kaboom-playground', JSON.stringify(
-        newValue
-    ));
-    updateStorageIndicator();
+    try{
+        const spreadPrev = spreadValue && typeof getStore()[key]?.value != null && typeof getStore()[key]?.value === "object";
+        const newValue = {...getStore(), [key]: {value: spreadPrev? {...(getStore()[key]?.value ?? {}), ...(value ?? {}) } : value }}
+        // console.log({spreadPrev, newValue, store: getStore()})
+        localStorage.setItem('kaboom-playground', JSON.stringify(
+            newValue
+        ));
+        updateStorageIndicator();
+    } catch(e){
+        console.error(e)
+    }
 }
 
 export const getValueFromStore = (storeId, failValue = "",valueKey = "") =>{
@@ -235,23 +240,16 @@ let tileSetImages = [
     }
 ];
 
-
-// function throttle(fn, wait) {
-//     var time = Date.now();
-//     return function() {
-//         if ((time + wait - Date.now()) < 0) {
-//             fn();
-//             time = Date.now();
-//         }
-//     }
-// }
-
 let tileSize = 32;
 let mapWidth = 10;
 let mapHeight = 10;
 let tileMapData = getValueFromStore('tileMapEditorData', tilemapEditorSeed, 'tileMapData');
 let tileMapEditorState = getValueFromStore('tileMapEditorData','', 'appState');
-console.log({tileMapData})
+
+export const storeTileMapEditorSession = (data) => {
+    if(!data) return;
+    storeSetValue('tileMapEditorData', data, false);
+}
 export const initTilemapEditor = () => {
     if(!tileMapData) return;
     console.log("INIT with", {tileSetImages, tileSize})
@@ -340,11 +338,12 @@ export const initTilemapEditor = () => {
             },
             buttonText: "Copy Kb to clip", // controls the apply button's text
         },
-        onMouseUp(data, exporters) {
-            // storeSetValue('tileMapEditorData', data);
-            // console.log( exporters.kaboomJs.getData())
-            storeSetValue('tileMapEditorData', data);
-        }
+        // onMouseUp(data, exporters) {
+        //     // storeSetValue('tileMapEditorData', data);
+        //     // console.log( exporters.kaboomJs.getData())
+        //     storeSetValue('tileMapEditorData', data);
+        // },
+        onUpdate: throttle(storeTileMapEditorSession, 500)
     })
 }
 

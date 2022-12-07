@@ -259,7 +259,7 @@ body {
     flex-direction: column;
     gap: 9px;
     width: 120px;
-    min-width: 70px;
+    min-width: 120px;
     padding: 6px;
     border-right: 1px solid #ffff0014;
 }
@@ -269,16 +269,32 @@ body {
     background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
 }
 .resources-item{
+    position: relative;
     border: 1px solid #444444;
     border-radius: 3px;
+    width: 100px;
+    height: 100px;
 }
-
 .resources-item.selected,
 .resources-item:active{
     border: 1px solid yellow;
 }
 .resources-item.selected.tileset{
     border: 1px solid cyan;
+}
+.resources-item > .bin-image {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background-color: rgba(3, 3, 2, 0.87);;
+    background-repeat:no-repeat;
+    border: none;
+    border-radius: 50%;
+    height: 30px;
+    opacity: 0.7;
+}
+.resources-item > .bin-image:hover{
+    opacity: 1;
 }
 .resources-item > img{
     image-rendering: crisp-edges;
@@ -303,4 +319,9 @@ body {
     max-width: 80vw;
     max-height: 600px;
     overflow: auto;
+}
+#addResource64Button{
+    position: sticky;
+    top: 0;
+    z-index: 999;
 }

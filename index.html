@@ -80,10 +80,7 @@
         <div class="head-tab-content game-resources">
           <div>
             <div id="imageResourcesSelector" class="resources-list">
-              also show this on exports?
               <div class="resources-item">thumb1</div>
-              <div class="resources-item">thumb2</div>
-              <div class="resources-item">thumb3</div>
             </div>
             <div class="resources-editor">
               <div id="resourcePreviewer" class="checkerboard"><img id="resourcePreviewerThumb" src=""/></div>
@@ -101,12 +98,9 @@
 
     <div id="reloadKb">💥</div>
 
-
     <div class="progressBar">
       <div id="storageProgressBar"> 1% </div>
     </div>
-
-
   </div>
 
   <script type="module" src="utils/seed.js"></script>
@@ -230,6 +224,7 @@
 
     const collectPresentImageResources = () => {
       // todo merge with other image resources in the app
+      //todo could use TilemapEditor.IMAGES instead as its what we can use to delete them
       return Object.values(TilemapEditor.getTilesets()).map(tileset=> ({
         src: tileset.src,
         type: "tileset",
@@ -237,14 +232,47 @@
     }
 
     const updateResourcePreviewer = (src, type) =>{
-      document.getElementById("resourcePreviewerThumb").src = src;
-      document.getElementById("resourcePreviewerSrc").innerText = `${type}: ${src}`;
+      if(src && type){
+        document.getElementById("resourcePreviewerThumb").src = src;
+        document.getElementById("resourcePreviewerSrc").innerText = `${type}: ${src}`;
+      }
     }
+
     // todo merge with filesToPack at export, put in localStorage
-    const updateImageResources = ()=>{
+    const fileUploadLimit = 1048576;
+    const updateImageResources = ()=> {
       const selectedThumb = getValueFromStore('resourcesSelectedResource', 0);
       const imageUrls = collectPresentImageResources();
       document.getElementById("imageResourcesSelector").innerHTML = "";
+
+      // base64 import image button
+      const addResource64Input = document.createElement("input")
+      addResource64Input.type ="file";
+      addResource64Input.onchange = (e) =>{
+        const file = e.target.files[0]
+        if(file.size > fileUploadLimit){
+          alert("file exceeds base64 string limit for localStorage. Select something under 1mb");
+          return;
+        }
+        console.log(e.target.files);
+        TilemapEditor.toBase64(e.target.files[0]).then(base64Src=>{
+          TilemapEditor.addNewTileSet(base64Src)
+          setTimeout(()=>{
+            updateImageResources()
+          }, 1000)//todo fix
+        })
+      }
+      addResource64Input.style = "display:none";
+      const addResource64Button = document.createElement("button")
+      addResource64Button.id = "addResource64Button";
+      addResource64Button.innerText = "Add resource (base64)";
+      addResource64Button.addEventListener("click", ()=>{
+        console.log("Add image resource to tilemap editor", TilemapEditor)
+        addResource64Input.click();
+      })
+      document.getElementById("imageResourcesSelector").appendChild(addResource64Button)
+      document.getElementById("imageResourcesSelector").appendChild(addResource64Input)
+
       imageUrls.forEach((image, i)=>{
         const src = image.src;
         const type = image.type;
@@ -255,15 +283,31 @@
         thumb.src = src;
         thumbWrapper.setAttribute('src', src);
         thumbWrapper.addEventListener("click", function(e){
+          console.log("SELECT RESOURCE", i)
           document.querySelectorAll('.resources-item').forEach(e=>e.classList.remove("selected"));
           storeSetValue('resourcesSelectedResource', i);
           thumbWrapper.className = `resources-item selected ${type} checkerboard`;
           updateResourcePreviewer(src, type);
         })
-        thumbWrapper.appendChild(thumb)
+        thumbWrapper.appendChild(thumb);
+
+        const binImageButton = document.createElement("button")
+        binImageButton.className = "bin-image"
+        binImageButton.innerText = "🗑️"
+        binImageButton.addEventListener("click", ()=>{
+          console.log("bin image with src")
+          storeSetValue('resourcesSelectedResource', 0);
+          TilemapEditor.deleteTilesetWithIndex(i, ()=>setTimeout(()=>{
+            updateImageResources()
+          }, 1000));
+        })
+        thumbWrapper.appendChild(binImageButton);
+
         document.getElementById("imageResourcesSelector").appendChild(thumbWrapper)
       })
-      updateResourcePreviewer(imageUrls[selectedThumb].src, imageUrls[selectedThumb].type);
+
+      console.log("update resource previewer", imageUrls,selectedThumb, imageUrls[selectedThumb])
+      if(imageUrls[selectedThumb]) updateResourcePreviewer(imageUrls[selectedThumb].src, imageUrls[selectedThumb].type);
     }
     // initKaboom();
     // destroy kaboom when not on tab
